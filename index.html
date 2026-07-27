@@ -877,6 +877,13 @@ document.querySelectorAll('.personal-input').forEach(input=>{
     const val = parseInt(e.target.value, 10);
     const valFinal = isNaN(val) || val<0 ? 0 : val;
     e.target.value = valFinal;
+    // Actualiza la memoria local ANTES de guardar (ver nota en Suministrado Real)
+    const idx = allConfig.findIndex(c=>c.obra===currentObraId && c.key==='personal_'+rol);
+    if(idx>=0) allConfig[idx].value = valFinal; else allConfig.push({obra:currentObraId, key:'personal_'+rol, value: valFinal});
+    let total = 0;
+    ROLES_PERSONAL.forEach(r=>{ total += parseInt(document.getElementById('pers-'+r).value)||0; });
+    document.getElementById('pers-total').textContent = total;
+
     const ind = document.getElementById('personal-save-indicator');
     ind.textContent = 'Guardando...';
     const resp = await sheetPost('setConfig', {obra: currentObraId, key:'personal_'+rol, value: valFinal});
@@ -886,11 +893,6 @@ document.querySelectorAll('.personal-input').forEach(input=>{
     }
     ind.textContent = 'Guardado ✓';
     setTimeout(()=>{ if(ind.textContent==='Guardado ✓') ind.textContent=''; }, 1800);
-    const idx = allConfig.findIndex(c=>c.obra===currentObraId && c.key==='personal_'+rol);
-    if(idx>=0) allConfig[idx].value = valFinal; else allConfig.push({obra:currentObraId, key:'personal_'+rol, value: valFinal});
-    let total = 0;
-    ROLES_PERSONAL.forEach(r=>{ total += parseInt(document.getElementById('pers-'+r).value)||0; });
-    document.getElementById('pers-total').textContent = total;
   });
 });
 
@@ -1009,9 +1011,10 @@ function renderRiskTableObra(o){
     input.addEventListener('change', async e=>{
       const cat = e.target.dataset.cat;
       const monto = parseFormatted(e.target.value);
-      await sheetPost('setPresupuesto', {obra:o.id, categoria:cat, monto});
       const idx = allPresupuesto.findIndex(p=>p.obra===o.id && p.categoria===cat);
       if(idx>=0) allPresupuesto[idx].monto = monto; else allPresupuesto.push({obra:o.id, categoria:cat, monto});
+      const resp = await sheetPost('setPresupuesto', {obra:o.id, categoria:cat, monto});
+      if(!resp){ alert('No se pudo guardar el presupuesto de esta categoría — revisa tu conexión e inténtalo de nuevo.'); }
       renderVistaDetalle(o);
     });
   });
@@ -1117,17 +1120,16 @@ function renderCatalogoObra(o){
       input.addEventListener('change', async e=>{
         const rowNum = e.target.dataset.row;
         const val = e.target.value.trim()==='' ? '' : parseFormatted(e.target.value);
+        // Actualiza la memoria local ANTES de guardar, para que si algo redibuja la tabla
+        // mientras se guarda (ej. el refresco automático), ya muestre el valor nuevo.
+        const idx = allConfig.findIndex(c=>c.obra===o.id && c.key==='sum_'+rowNum);
+        if(idx>=0) allConfig[idx].value = val; else allConfig.push({obra:o.id, key:'sum_'+rowNum, value: val});
         e.target.disabled = true;
         e.target.style.opacity = '0.5';
         const resp = await sheetPost('setConfig', {obra:o.id, key:'sum_'+rowNum, value: val});
         if(!resp){
           alert('No se pudo guardar el "Suministrado Real" de esta partida — revisa tu conexión e inténtalo de nuevo.');
-          e.target.disabled = false;
-          e.target.style.opacity = '1';
-          return;
         }
-        const idx = allConfig.findIndex(c=>c.obra===o.id && c.key==='sum_'+rowNum);
-        if(idx>=0) allConfig[idx].value = val; else allConfig.push({obra:o.id, key:'sum_'+rowNum, value: val});
         renderRows();
       });
     });
