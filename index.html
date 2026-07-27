@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Maestro — HVAC S.A. de C.V.</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
+<style>
+:root{
+  --bg-page:#f5f6f8; --bg-card:#ffffff; --bg-sidebar:#ffffff;
+  --text-primary:#16202b; --text-secondary:#7c8698; --text-muted:#a6afbd;
+  --teal:#1c7f74; --teal-soft:#e3f3f0;
+  --orange:#d9642c; --orange-soft:#fbe9df;
+  --blue:#2568ac; --blue-soft:#e6f0f9;
+  --purple:#6a45c9; --purple-soft:#f0eafa;
+  --positive:#1f9d74; --positive-soft:#e6f6f0;
+  --warning:#c98a1b; --warning-soft:#fbf1de;
+  --negative:#c93c34; --negative-soft:#fbebe9;
+  --border:#e9ebf0; --radius:14px; --gap:18px;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg-page);color:var(--text-primary);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;font-size:14px;}
+
+.app-shell{display:flex;min-height:100vh;}
+.sidebar{width:230px;background:var(--bg-sidebar);border-right:1px solid var(--border);
+  padding:22px 16px;flex-shrink:0;}
+.sidebar-brand{display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 6px 22px 6px;border-bottom:1px solid var(--border);margin-bottom:16px;}
+.sidebar-brand img{width:100%;max-width:190px;height:auto;border-radius:9px;background:#fff;object-fit:contain;padding:6px;}
+.sidebar-brand .brand-name{font-size:13.5px;font-weight:800;line-height:1.2;text-align:center;}
+.nav-section-label{font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;
+  font-weight:700;margin:14px 8px 6px 8px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:5px;}
+.nav-section-label:hover{color:var(--text-secondary);}
+.nav-section-label .chevron{display:inline-block;transition:transform .18s;font-size:9px;}
+.nav-section-label .chevron.collapsed{transform:rotate(-90deg);}
+.nav-obras-group.collapsed{display:none;}
+  font-weight:700;margin:14px 8px 6px 8px;}
+.nav-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:9px;
+  font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;margin-bottom:3px;}
+.nav-item:hover{background:#f4f5f7;color:var(--text-primary);}
+.nav-item.active{background:var(--teal-soft);color:var(--teal);}
+.nav-item .nav-left{display:flex;align-items:center;gap:10px;}
+.nav-item .nav-icon{font-size:15px;width:18px;text-align:center;}
+.nav-item .nav-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+
+.main-content{flex:1;padding:24px 30px;max-width:1280px;}
+
+.topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.topbar .eyebrow{font-size:11.5px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.topbar h1{font-size:21px;font-weight:800;margin:2px 0 0 0;}
+.topbar-actions{display:flex;align-items:center;gap:14px;}
+.topbar-actions .updated{font-size:12px;color:var(--text-secondary);}
+.btn-refresh-top{padding:9px 16px;background:#fff;color:var(--teal);border:1.5px solid var(--teal);border-radius:9px;
+  font-size:13px;font-weight:700;cursor:pointer;}
+.btn-refresh-top:hover{background:var(--teal-soft);}
+.btn-refresh-top.loading{opacity:.6;pointer-events:none;}
+
+.filters-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 20px;margin-bottom:var(--gap);display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.filters-card .filters-icon{width:34px;height:34px;border-radius:9px;background:var(--teal-soft);
+  color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.filters-card .filters-label{font-size:12.5px;color:var(--text-secondary);}
+.filters-card .filters-label strong{display:block;font-size:13.5px;color:var(--text-primary);font-weight:700;}
+.filters-controls{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto;align-items:center;}
+.filters-controls label{font-size:11px;color:var(--text-secondary);margin-right:4px;}
+.filters-controls input, .filters-controls select{padding:7px 10px;border:1px solid var(--border);
+  border-radius:8px;font-size:12.5px;background:#fafbfc;}
+
+.risk-banner{border-radius:var(--radius);padding:13px 20px;margin-bottom:var(--gap);
+  display:flex;align-items:center;gap:12px;font-size:13px;font-weight:600;border:1px solid;}
+.risk-banner.ok{background:var(--positive-soft);color:#146349;border-color:#bfe6d6;}
+.risk-banner.alert{background:var(--negative-soft);color:#8c2b25;border-color:#f0c6c2;}
+.risk-banner .risk-detail{font-weight:400;opacity:.9;}
+.btn-refresh{border:1px solid #bfe6d6;background:#fff;color:#146349;border-radius:20px;
+  padding:3px 12px;font-size:11.5px;font-weight:700;cursor:pointer;margin-left:8px;}
+.btn-refresh:hover{background:#eafaf3;}
+
+.status-strip{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:var(--gap);}
+.status-chip{display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:20px;font-size:12px;
+  font-weight:700;border:1px solid;}
+.status-chip.ok{background:var(--positive-soft);color:var(--positive);border-color:#bfe6d6;}
+.status-chip.warn{background:var(--negative-soft);color:var(--negative);border-color:#f0c6c2;}
+.status-chip .dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);margin-bottom:var(--gap);}
+.kpi-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px 22px;box-shadow:0 1px 3px rgba(20,30,50,.05);}
+.kpi-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.kpi-label{font-size:12px;color:var(--text-secondary);font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.kpi-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.kpi-icon.blue{background:var(--blue-soft);color:var(--blue);}
+.kpi-icon.orange{background:var(--orange-soft);color:var(--orange);}
+.kpi-icon.green{background:var(--positive-soft);color:var(--positive);}
+.kpi-icon.purple{background:var(--purple-soft);color:var(--purple);}
+.kpi-value{font-size:23px;font-weight:800;margin-bottom:9px;}
+.kpi-tag{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;
+  padding:2px 9px;border-radius:20px;}
+.kpi-tag.pos{background:var(--positive-soft);color:var(--positive);}
+.kpi-tag.neg{background:var(--negative-soft);color:var(--negative);}
+.kpi-tag.neutral{background:#f0f1f4;color:var(--text-secondary);}
+.kpi-footnote{font-size:11.5px;color:var(--text-muted);margin-top:6px;}
+
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px 24px;box-shadow:0 1px 3px rgba(20,30,50,.05);margin-bottom:var(--gap);}
+.card-title{font-size:14.5px;font-weight:800;margin:0 0 3px 0;}
+.card-subtitle{font-size:11.5px;color:var(--text-secondary);margin-bottom:16px;}
+
+.chart-side-row{display:grid;grid-template-columns:2fr 1fr;gap:var(--gap);margin-bottom:var(--gap);align-items:stretch;}
+.chart-card canvas{max-height:260px;}
+.chart-row2{display:grid;grid-template-columns:1.2fr 1fr;gap:var(--gap);margin-bottom:var(--gap);}
+.chart-row2 canvas{max-height:260px;}
+.personal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px;}
+.personal-box{background:#fafbfc;border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.personal-box .ss-label{font-size:10.5px;color:var(--text-secondary);text-transform:uppercase;margin-bottom:6px;}
+.personal-input{width:100%;border:1px solid var(--border);border-radius:7px;padding:6px 8px;font-size:17px;
+  font-weight:800;color:var(--text-primary);background:#fff;}
+.personal-input:focus{outline:2px solid var(--blue-soft);border-color:var(--blue);}
+.personal-total{font-size:12.5px;color:var(--text-secondary);text-align:right;border-top:1px solid var(--border);padding-top:10px;}
+.personal-total strong{color:var(--text-primary);font-size:14px;}
+
+.side-panel .progress-label{display:flex;justify-content:space-between;font-size:12px;
+  color:var(--text-secondary);font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;}
+.progress-value{font-size:22px;font-weight:800;float:right;}
+.progress-bar-track{background:#eef0f3;border-radius:20px;height:9px;overflow:hidden;margin:8px 0 18px 0;}
+.progress-bar-fill{background:linear-gradient(90deg,var(--teal),#39a294);height:100%;border-radius:20px;transition:width .3s;}
+.avance-input{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+.avance-input input[type=range]{flex:1;}
+.side-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.side-stat-box{background:#fafbfc;border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.side-stat-box .ss-label{font-size:10.5px;color:var(--text-secondary);text-transform:uppercase;margin-bottom:5px;}
+.side-stat-box .ss-value{font-size:17px;font-weight:800;}
+.side-pending{background:#fafbfc;border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.side-pending .ss-label{font-size:10.5px;color:var(--text-secondary);text-transform:uppercase;margin-bottom:5px;}
+.side-pending .ss-value{font-size:18px;font-weight:800;color:var(--orange);}
+.side-pending .ss-note{font-size:11px;color:var(--text-muted);margin-top:4px;}
+
+.risk-table, .obras-table{width:100%;border-collapse:collapse;font-size:13px;}
+.risk-table thead th, .obras-table thead th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--border);
+  color:var(--text-secondary);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.4px;}
+.risk-table tbody td, .obras-table tbody td{padding:11px 12px;border-bottom:1px solid #f1f2f5;vertical-align:middle;}
+.risk-table td.num, .obras-table td.num{text-align:right;font-variant-numeric:tabular-nums;}
+.risk-table tr.row-over{background:var(--negative-soft);}
+.risk-table tr.row-warn{background:var(--warning-soft);}
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;
+  font-size:11.5px;font-weight:700;white-space:nowrap;}
+.status-pill.ok{background:var(--positive-soft);color:var(--positive);}
+.status-pill.warn{background:var(--warning-soft);color:var(--warning);}
+.status-pill.over{background:var(--negative-soft);color:var(--negative);}
+.status-pill.none{background:#f0f1f4;color:var(--text-muted);}
+.status-pill.done{background:var(--blue-soft);color:var(--blue);}
+.budget-input{width:120px;text-align:right;padding:5px 8px;border:1px solid var(--border);border-radius:6px;
+  font-size:12.5px;font-variant-numeric:tabular-nums;background:#fafbfc;}
+.budget-input:focus{outline:2px solid var(--blue-soft);border-color:var(--blue);background:#fff;}
+.currency-field{position:relative;display:inline-flex;align-items:center;}
+.currency-field::before{content:'$';position:absolute;left:9px;color:var(--text-secondary);font-size:12.5px;pointer-events:none;font-weight:600;}
+.currency-field input{padding-left:19px !important;}
+.obra-name{font-weight:700;}
+.obra-client{font-size:11.5px;color:var(--text-secondary);}
+.mini-progress-track{background:#eef0f3;border-radius:20px;height:7px;width:90px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px;}
+.mini-progress-fill{background:var(--teal);height:100%;border-radius:20px;}
+.obra-row{cursor:pointer;}
+.obra-row:hover{background:#f8f9fb;}
+
+.tracker-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin-bottom:var(--gap);}
+.tracker-card h4{margin:0 0 4px 0;font-size:14px;font-weight:800;display:flex;align-items:center;gap:7px;}
+.tracker-card.ingresos h4{color:var(--teal);}
+.tracker-card.egresos h4{color:var(--orange);}
+.tracker-form{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap;}
+.tracker-form input, .tracker-form select{padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;background:#fafbfc;}
+.tracker-form input[type="text"]{flex:1;min-width:110px;}
+.tracker-form input[type="number"]{width:105px;}
+.tracker-form input[type="date"]{width:135px;}
+.tracker-form select.sel-moneda{width:75px;}
+.tracker-form select.sel-area{width:100%;order:5;}
+.btn-add{padding:8px 16px;border:none;border-radius:8px;background:var(--teal);color:#fff;
+  font-size:13px;font-weight:700;cursor:pointer;order:6;}
+.btn-add:hover{opacity:.9;}
+.tracker-list{max-height:190px;overflow-y:auto;border-top:1px solid var(--border);}
+.tracker-row{display:flex;justify-content:space-between;align-items:center;padding:9px 2px;
+  border-bottom:1px solid #f1f2f5;font-size:12.5px;gap:10px;}
+.tracker-row .row-info{display:flex;flex-direction:column;overflow:hidden;}
+.tracker-row .row-concept{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tracker-row .row-meta{font-size:10.5px;color:var(--text-secondary);}
+.tracker-row .row-amount{font-weight:700;white-space:nowrap;text-align:right;}
+.tracker-row .row-amount .row-equiv{display:block;font-size:10px;font-weight:500;color:var(--text-secondary);}
+.tracker-row.ingreso .row-amount{color:var(--teal);}
+.tracker-row.egreso .row-amount{color:var(--orange);}
+.row-del{border:none;background:none;color:#b7bdc8;cursor:pointer;font-size:15px;padding:2px 6px;}
+.row-del:hover{color:var(--negative);}
+.tracker-total{display:flex;justify-content:space-between;padding-top:12px;margin-top:8px;
+  border-top:2px solid var(--border);font-size:13.5px;font-weight:700;}
+.empty-state{font-size:12.5px;color:var(--text-secondary);text-align:center;padding:16px 0;}
+.save-indicator{font-size:11px;color:var(--text-secondary);text-align:right;margin-top:6px;min-height:14px;}
+
+.table-wrap{overflow-x:auto;}
+.filters{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.filters select, .filters input{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fafbfc;}
+.data-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.data-table thead th{text-align:left;padding:9px 10px;border-bottom:2px solid var(--border);color:var(--text-secondary);
+  font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;cursor:pointer;user-select:none;}
+.data-table tbody td{padding:8px 10px;border-bottom:1px solid #f1f2f5;}
+.data-table tbody tr:hover{background:#f8f9fb;}
+.data-table td.num{text-align:right;font-variant-numeric:tabular-nums;}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge.usd{background:var(--blue-soft);color:var(--blue);}
+.badge.mxn{background:var(--positive-soft);color:var(--positive);}
+.badge.equipo{background:var(--purple-soft);color:var(--purple);}
+.badge.mo{background:var(--orange-soft);color:var(--orange);}
+.table-footer{font-size:12px;color:var(--text-secondary);margin-top:10px;}
+
+.dashboard-footer{text-align:center;font-size:11.5px;color:var(--text-secondary);padding:16px 0 4px;}
+.hidden{display:none !important;}
+
+@media (max-width:1000px){
+  .sidebar{display:none;}
+  .kpi-row{grid-template-columns:1fr 1fr;}
+  .chart-side-row, .chart-row2, .tracker-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAgAAAQABAAD/wAARCAE0AcADACIAAREBAhEB/9sAQwAIBgYHBgUIBwcHCQkICgwUDQwLCwwZEhMPFB0aHx4dGhwcICQuJyAiLCMcHCg3KSwwMTQ0NB8nOT04MjwuMzQy/9sAQwEJCQkMCwwYDQ0YMiEcITIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMAAAERAhEAPwD3+iiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiimTTRW8LTTSLHGgyzscAD3NAD6KyP+Ep0D/oNWH/gQv+NH/CU6B/0GrD/wIX/GgDXorI/4Snw//wBBqw/8CF/xo/4SnQP+g1Yf+BC/40Aa9FZH/CU6B/0GrD/wIX/Gj/hKdA/6DVh/4EL/AI0Aa9FUrXV9NvWC2t/bTse0cob+VXaACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKSuF8b/FHSPB+bZcXmo/8+6N9z/ePagDuZHSJC8jqqDqzHAFcrrfxG8L6CZo7nU4nuI13eTHli3sD0/WvH2m+IvxU2vAr2ulsrAHJihkXPPP8RFdnoXwI0Ozj36xdT39wGDKVPlqBjlSOc80AVb34+WEkBXR9JuZ7rPCSDIx/wABOayx8cvEjEAeFlJP/TOWvX7Dwn4f0u4E9jo9nbzAYEkcQDfnWt5af3F/KgDxlfiF8RL4eba+FVVDyAOP5mkn+KXjnTos3nhJOOp+Y/yNe0YA6Cgqp6gGgDwj/hefiT/oV1/79y09Pjnr+fn8L/lFLXuflp/cX8qPLT+4v5UAeMRfHK+x++8NXAP+zE9MuPjnqIH+j+Gpie2+J/6V7SYoz1RfypPIiH/LNfyoA8Ik+LPjfxBjT9H0E212xyHSNs4/4HxVdfAHxH8WyzXWr35smchXimc4YewXivoEIoOQoB+lOoA8Yi/Z9sDEhm1y9EmPmChcZ9uKf/wz7pf/AEHL/wDJf8K9kooA8b/4Z80z/oO3/wCS/wCFVNV+AtraaXc3FprF7LPFGXVHC4bAzjgV7fRQB8deEtFttc8UW+k6pdy2MchZWfoyt2HPvXsP/DPumf8AQdv/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UUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFAH//2Q==" alt="Logo">
+      <div>
+        <div class="brand-name">HVAC S.A. DE C.V.</div>
+      </div>
+    </div>
+    <div class="nav-item active" id="nav-todas" onclick="seleccionarObra(null)"><span class="nav-left"><span class="nav-icon">🏠</span>Todas las obras</span></div>
+    <div class="nav-section-label collapsible" onclick="toggleSidebarSection('activas')">
+      <span class="chevron" id="chevron-activas">▾</span> Obras activas
+    </div>
+    <div id="nav-obras-list-activas" class="nav-obras-group"></div>
+    <div class="nav-section-label collapsible" onclick="toggleSidebarSection('terminadas')">
+      <span class="chevron" id="chevron-terminadas">▾</span> Obras terminadas
+    </div>
+    <div id="nav-obras-list-terminadas" class="nav-obras-group"></div>
+  </aside>
+
+  <main class="main-content">
+
+    <div class="topbar">
+      <div>
+        <div class="eyebrow" id="topbar-eyebrow">Control financiero consolidado</div>
+        <h1 id="topbar-title">Dashboard Maestro — Todas las Obras</h1>
+      </div>
+      <div class="topbar-actions">
+        <span class="updated" id="updated-time">Actualizado —</span>
+        <button class="btn-refresh-top" id="btn-refresh" onclick="cargarTodo()">🔄 Actualizar</button>
+      </div>
+    </div>
+
+    <div class="filters-card">
+      <div class="filters-icon">⚙</div>
+      <div class="filters-label"><strong>Filtros activos</strong>Tipo de cambio (el avance de obra ahora se calcula automático)</div>
+      <div class="filters-controls">
+        <label>TC USD/MXN</label>
+        <input type="number" id="f-tc" value="17.5" step="0.01" style="width:70px;">
+      </div>
+    </div>
+
+    <div class="risk-banner alert hidden" id="storage-banner">
+      <span class="risk-icon">⚠</span>
+      <span>No se pudo conectar a Google Sheets ahora mismo. Los cambios no se van a guardar hasta reconectar — refresca o revisa tu internet.</span>
+    </div>
+
+    <!-- ============ VISTA: TODAS LAS OBRAS ============ -->
+    <div id="view-todas">
+      <div class="status-strip" id="status-strip"></div>
+
+      <section class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-label">Ingresos</span><span class="kpi-icon blue">$</span></div>
+          <div class="kpi-value" id="kpi-ingresos">$0</div>
+          <span class="kpi-tag neutral" id="kpi-ingresos-tag">— obras</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-label">Gastos</span><span class="kpi-icon orange">🛒</span></div>
+          <div class="kpi-value" id="kpi-gastos">$0</div>
+          <span class="kpi-tag neg" id="kpi-gastos-tag">0% del costo presupuestado</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-label">Utilidad Actual</span><span class="kpi-icon green">↗</span></div>
+          <div class="kpi-value" id="kpi-utilidad-actual">$0</div>
+          <span class="kpi-tag pos" id="kpi-utilidad-actual-tag">0% utilidad actual</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-label">Utilidad al Finalizar</span><span class="kpi-icon purple">📦</span></div>
+          <div class="kpi-value" id="kpi-utilidad-final">$0</div>
+          <span class="kpi-tag pos" id="kpi-utilidad-final-tag">0% utilidad final</span>
+        </div>
+      </section>
+
+      <section class="chart-side-row">
+        <div class="card chart-card">
+          <div class="card-title">Corte acumulado por mes</div>
+          <div class="card-subtitle" id="chart-subtitle-todas">Ingresos, gastos y utilidad de todas las obras, por semana</div>
+          <canvas id="chart-weekly-todas"></canvas>
+        </div>
+        <div class="card side-panel">
+          <div class="card-title">Estado de obras</div>
+          <div class="card-subtitle">Avance y cierre financiero estimado</div>
+          <div class="progress-label">AVANCE PROMEDIO (AUTOMÁTICO) <span class="progress-value" id="avance-promedio-display">0%</span></div>
+          <div class="progress-bar-track"><div class="progress-bar-fill" id="avance-promedio-fill" style="width:0%"></div></div>
+          <div class="side-stats">
+            <div class="side-stat-box"><div class="ss-label">En proceso</div><div class="ss-value" id="ss-en-proceso">—</div></div>
+            <div class="side-stat-box"><div class="ss-label">Terminadas</div><div class="ss-value" id="ss-terminadas">—</div></div>
+          </div>
+          <div class="side-pending">
+            <div class="ss-label">Pendiente por cobrar</div>
+            <div class="ss-value" id="ss-pendiente">$0</div>
+            <div class="ss-note">Suma de venta − ingresos de todas las obras</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="card">
+        <div class="card-title">Obras</div>
+        <div class="card-subtitle">Clic en una obra para abrir su vista editable</div>
+        <div class="table-wrap">
+          <table class="obras-table">
+            <thead>
+              <tr><th>Obra</th><th>Avance</th><th class="num">Ingresos</th><th class="num">Gastos</th>
+                <th class="num">Utilidad actual</th><th class="num">Utilidad esperada</th><th>Estado</th></tr>
+            </thead>
+            <tbody id="obras-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ VISTA: DETALLE DE UNA OBRA (editable) ============ -->
+    <div id="view-detalle" class="hidden">
+
+      <section class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-label">Ingresos</span><span class="kpi-icon blue">$</span></div>
+          <div class="kpi-value" id="d-kpi-ingresos">$0</div>
+          <span class="kpi-tag neutral" id="d-kpi-ingresos-tag">cobrado/acumulado</span>
+          <div class="kpi-footnote hidden" id="d-kpi-ingresos-mxn">≈ $0 MXN</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-label">Gastos</span><span class="kpi-icon orange">🛒</span></div>
+          <div class="kpi-value" id="d-kpi-gastos">$0</div>
+          <span class="kpi-tag neg" id="d-kpi-gastos-tag">0% gasto acumulado</span>
+          <div class="kpi-footnote hidden" id="d-kpi-gastos-mxn">≈ $0 MXN</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-label">Utilidad Actual</span><span class="kpi-icon green">↗</span></div>
+          <div class="kpi-value" id="d-kpi-utilidad-actual">$0</div>
+          <span class="kpi-tag pos" id="d-kpi-utilidad-actual-tag">0% utilidad actual</span>
+          <div class="kpi-footnote hidden" id="d-kpi-utilidad-actual-mxn">≈ $0 MXN</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-label">Utilidad al Finalizar</span><span class="kpi-icon purple">📦</span></div>
+          <div class="kpi-value" id="d-kpi-utilidad-final">$0</div>
+          <span class="kpi-tag pos" id="d-kpi-utilidad-final-tag">0% utilidad final</span>
+          <div class="kpi-footnote hidden" id="d-kpi-utilidad-final-mxn">≈ $0 MXN</div>
+        </div>
+      </section>
+
+      <section class="chart-side-row">
+        <div class="card chart-card">
+          <div class="card-title">Corte acumulado por mes</div>
+          <div class="card-subtitle" id="d-chart-subtitle">Ingresos, gastos y utilidad capturados por semana</div>
+          <canvas id="chart-weekly-detalle"></canvas>
+        </div>
+        <div class="card side-panel">
+          <div class="card-title">Estado de la obra</div>
+          <div class="card-subtitle">Avance y cierre financiero estimado</div>
+          <div class="progress-label">AVANCE DE OBRA <span class="progress-value" id="d-avance-display">0%</span></div>
+          <div class="card-subtitle" style="margin:-6px 0 8px 0;">Ingresos cobrados ÷ precio de venta</div>
+          <div class="progress-bar-track"><div class="progress-bar-fill" id="d-avance-fill" style="width:0%"></div></div>
+          <div class="side-stat-box" style="margin-bottom:14px;">
+            <div class="ss-label">Duración total estimada</div>
+            <div class="ss-value" id="d-ss-duracion">—</div>
+          </div>
+          <div class="side-pending">
+            <div class="ss-label">Pendiente por cobrar</div>
+            <div class="ss-value" id="d-ss-pendiente">$0</div>
+            <div class="ss-note">Venta total − ingresos ya cobrados</div>
+          </div>
+          <div class="side-stats" style="margin-top:10px;">
+            <div class="side-stat-box"><div class="ss-label">Precio de venta</div><div class="ss-value" id="d-ss-venta" style="color:var(--blue);">—</div></div>
+            <div class="side-stat-box"><div class="ss-label">Costo presupuestado</div><div class="ss-value" id="d-ss-costo" style="color:var(--text-secondary);">—</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="chart-row2">
+        <div class="card">
+          <div class="card-title">👷 Personal en obra</div>
+          <div class="card-subtitle">Cantidad de trabajadores activos por rol — editable</div>
+          <div class="personal-grid">
+            <div class="personal-box">
+              <div class="ss-label">Ingenieros</div>
+              <input type="number" min="0" class="personal-input" id="pers-ingenieros" data-rol="ingenieros">
+            </div>
+            <div class="personal-box">
+              <div class="ss-label">Ducteros</div>
+              <input type="number" min="0" class="personal-input" id="pers-ducteros" data-rol="ducteros">
+            </div>
+            <div class="personal-box">
+              <div class="ss-label">Técnicos</div>
+              <input type="number" min="0" class="personal-input" id="pers-tecnicos" data-rol="tecnicos">
+            </div>
+            <div class="personal-box">
+              <div class="ss-label">Seguristas</div>
+              <input type="number" min="0" class="personal-input" id="pers-seguristas" data-rol="seguristas">
+            </div>
+          </div>
+          <div class="personal-total">Total en obra: <strong id="pers-total">0</strong> personas</div>
+          <div class="save-indicator" id="personal-save-indicator">&nbsp;</div>
+        </div>
+        <div class="card chart-card">
+          <div class="card-title">📈 Mano de Obra por mes</div>
+          <div class="card-subtitle">Egresos capturados en la categoría "Mano de obra", por mes</div>
+          <canvas id="chart-mano-obra"></canvas>
+        </div>
+      </section>
+
+      <div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>📊 Presupuesto vs. Real por categoría</span>
+          <button class="btn-refresh" style="margin-left:0;" onclick="restablecerPresupuesto()">↺ Restablecer al Excel</button>
+        </div>
+        <div class="card-subtitle">Categorías y montos tomados de "Análisis General" del Excel, ya valorizados al tipo de cambio. Editable. Filas en rojo ya rebasaron su presupuesto; en ámbar, cerca del límite (&gt;90%)</div>
+        <div class="table-wrap">
+          <table class="risk-table" id="d-risk-table">
+            <thead><tr><th>Categoría</th><th class="num">Presupuestado</th><th class="num">Real</th><th class="num">Variación</th><th>Estado</th></tr></thead>
+            <tbody id="d-risk-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🧾 Seguimiento financiero real</div>
+        <div class="card-subtitle">Registra ingresos por estimación y egresos por categoría</div>
+        <div class="tracker-grid">
+          <div class="tracker-card ingresos">
+            <h4>💰 Ingresos</h4>
+            <div class="tracker-form">
+              <input type="date" id="in-fecha">
+              <input type="text" id="in-concepto" placeholder="Concepto (ej. Anticipo equipos)">
+              <span class="currency-field"><input type="text" inputmode="decimal" id="in-monto" placeholder="Monto"></span>
+              <select class="sel-moneda" id="in-moneda"><option value="MXN">MXN</option><option value="USD">USD</option></select>
+              <select class="sel-area" id="in-estimacion"></select>
+              <button class="btn-add" onclick="addEntry('ingresos')">+ Agregar ingreso</button>
+            </div>
+            <div class="tracker-list" id="list-ingresos"></div>
+            <div class="tracker-total"><span>Total Ingresos</span><span id="total-ingresos" style="color:var(--teal)">$0</span></div>
+          </div>
+          <div class="tracker-card egresos">
+            <h4>📤 Egresos</h4>
+            <div class="tracker-form">
+              <input type="date" id="eg-fecha">
+              <input type="text" id="eg-concepto" placeholder="Concepto (ej. Pago proveedor)">
+              <span class="currency-field"><input type="text" inputmode="decimal" id="eg-monto" placeholder="Monto"></span>
+              <select class="sel-moneda" id="eg-moneda"><option value="MXN">MXN</option><option value="USD">USD</option></select>
+              <select class="sel-area" id="eg-area"></select>
+              <button class="btn-add" onclick="addEntry('egresos')">+ Agregar egreso</button>
+            </div>
+            <div class="tracker-list" id="list-egresos"></div>
+            <div class="tracker-total"><span>Total Egresos</span><span id="total-egresos" style="color:var(--orange)">$0</span></div>
+          </div>
+        </div>
+        <div class="save-indicator" id="save-indicator">&nbsp;</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Catálogo de conceptos</div>
+        <div class="card-subtitle">Detalle de las partidas de la propuesta original. "Suministrado Real" es editable — captura lo que realmente se ha entregado en obra por partida.</div>
+        <div class="filters">
+          <select id="f-area"><option value="">Todas las áreas</option></select>
+          <select id="f-tipo"><option value="">Equipo y M.O.</option><option value="Equipo">Solo Equipo</option><option value="M.O.">Solo M.O.</option></select>
+          <input type="text" id="f-search" placeholder="Buscar en descripción...">
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="items-table">
+            <thead><tr>
+              <th data-key="area">Área</th><th data-key="tipo">Tipo</th><th data-key="desc">Descripción</th>
+              <th data-key="unidad">Unidad</th><th data-key="cantidad" class="num">Cant. Presup.</th>
+              <th class="num">Suministrado Real</th><th class="num">Variación</th>
+              <th data-key="currency">Moneda</th>
+              <th data-key="total_venta" class="num">Total Venta</th><th data-key="costo_total" class="num">Costo Total</th>
+            </tr></thead>
+            <tbody id="items-tbody"></tbody>
+          </table>
+        </div>
+        <div class="table-footer" id="table-footer">—</div>
+      </div>
+    </div>
+
+    <footer class="dashboard-footer">
+      Datos consolidados de todas las obras — un solo Google Sheet compartido. Cambios en cualquier vista se sincronizan cada 20 seg para todos.
+    </footer>
+  </main>
+</div>
+
+<script>
+// ================= DATOS ESTÁTICOS POR OBRA (de cada Excel) =================
+const OBRA_BUNDLE = {"dsv": {"kpis": {"costoDirecto": 43373177.502, "ventaTotal": 64214003.269999996, "indirectoTotal": 8385986.38194, "duracionMeses": 8, "tc": 17.5, "monedaPrincipal": "MXN"}, "rubros": [{"rubro": "Lavadora de Aire", "valorizado": 22538808.599999998}, {"rubro": "Louvers Persiana de Gravedad", "valorizado": 3066000}, {"rubro": "Sistemas VRF", "valorizado": 1860757.8219999997}, {"rubro": "Extraccion", "valorizado": 396648}, {"rubro": "Louvers", "valorizado": 31500}, {"rubro": "Minisplits", "valorizado": 64627.5}, {"rubro": "Automatizacion", "valorizado": 519410}, {"rubro": "Lamina Galv", "valorizado": 401880}, {"rubro": "Spirodcuto", "valorizado": 1422255}, {"rubro": "Ducto Textil", "valorizado": 7644920.58}, {"rubro": "Tuberia de Cobre y Consumibles", "valorizado": 555606}, {"rubro": "Soporteria", "valorizado": 40162}, {"rubro": "Rejillas", "valorizado": 39227}, {"rubro": "Ducto Flexible", "valorizado": 128820}, {"rubro": "Mano de obra", "valorizado": 2043805}, {"rubro": "Equipos de elevación", "valorizado": 2220000}, {"rubro": "Grúas", "valorizado": 398750}], "items": [{"section": "VENTILACION NAVE GENERAL OP. LAVADORAS DE AIRE POR UN COSTADO (EQUIPOS)", "part": 1, "desc": "SUMINISTRO DE LAVADORA DE AIRE MCA. FLAKT TIPO PAQUETE, MODELO: RGML-1000, PARA MANEJAR 60", "unidad": "PZA", "cantidad": 33, "pu_venta": 50906.4, "total_venta": 1679911.2, "costo_unit": 39028.24, "costo_total": 1287931.92, "row": 21, "currency": "USD", "tipo": "Equipo"}, {"section": "VENTILACION NAVE GENERAL OP. LAVADORAS DE AIRE POR UN COSTADO (EQUIPOS)", "part": 2, "desc": "SUMINISTRO DE LOUVER CON PERSIANA DE GRAVEDAD DE 90\" X 60\". ", "unidad": "PZA", "cantidad": 120, "pu_venta": 2344, "total_venta": 281280, "costo_unit": 1460, "costo_total": 175200, "row": 22, "currency": "USD", "tipo": "Equipo"}, {"section": "VENTILACION NAVE GENERAL OP. LAVADORAS DE AIRE POR UN COSTADO (M.O.)", "part": 1, "desc": "SUMINISTRO DE DUCTO REDONDO TIPO ESPIRODUCTO VARIOS DIAMETROS Y CALIBRES CON RECUBRIMIENTO", "unidad": "ML", "cantidad": 795, "pu_venta": 2862.4, "total_venta": 2275608, "costo_unit": 1789, "costo_total": 1422255, "row": 29, "currency": "MXN", "tipo": "M.O."}, {"section": "VENTILACION NAVE GENERAL OP. LAVADORAS DE AIRE POR UN COSTADO (M.O.)", "part": 2, "desc": "SUMINISTRO DE SISTEMA DE DIFUSION TEXTIL MARCA: FABRICAIR. INCLUYE: DUCTOS TEXTILES. CABLE", "unidad": "PZA", "cantidad": 33, "pu_venta": 388270.94999999995, "total_venta": 12812941.349999998, "costo_unit": 231664.26, "costo_total": 7644920.58, "row": 30, "currency": "MXN", "tipo": "M.O."}, {"section": "VENTILACION NAVE GENERAL OP. LAVADORAS DE AIRE POR UN COSTADO (M.O.)", "part": 4, "desc": "MANO DE OBRA PARA LA INSTALACION DE DUCTERIA TIPO DUCTO TEXTIL.", "unidad": "ML", "cantidad": 795, "pu_venta": 1206.4, "total_venta": 959088.0000000001, "costo_unit": 754, "costo_total": 599430, "row": 31, "currency": "MXN", "tipo": "M.O."}, {"section": "VENTILACION NAVE GENERAL OP. LAVADORAS DE AIRE POR UN COSTADO (M.O.)", "part": 5, "desc": "MANO DE OBRA PARA LA INTERCONEXION ELECTROMECANICA DE LAVADORAS DE AIRE. SE REQUIERE CONEX", "unidad": "PZA", "cantidad": 33, "pu_venta": 21000, "total_venta": 693000, "costo_unit": 11375, "costo_total": 375375, "row": 32, "currency": "MXN", "tipo": "M.O."}, {"section": "VENTILACION NAVE GENERAL OP. LAVADORAS DE AIRE POR UN COSTADO (M.O.)", "part": 6, "desc": "MANO DE OBRA PARA INSTALACION DE LOUVERS MONTADOS EN MURO", "unidad": "PZA", "cantidad": 120, "pu_venta": 11375, "total_venta": 1365000, "costo_unit": 6125, "costo_total": 735000, "row": 33, "currency": "MXN", "tipo": "M.O."}, {"section": "VENTILACION NAVE GENERAL OP. LAVADORAS DE AIRE POR UN COSTADO (M.O.)", "part": 7, "desc": "MANIOBRA CON EQUIPO DE ELEVACION Y BRAZO ARTICULADO.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 2940000, "total_venta": 2940000, "costo_unit": 2100000, "costo_total": 2100000, "row": 34, "currency": "MXN", "tipo": "M.O."}, {"section": "VENTILACION NAVE GENERAL OP. LAVADORAS DE AIRE POR UN COSTADO (M.O.)", "part": 8, "desc": "MANIOBRA CON GRUA PARA COLOCAR EQUIPOS EN SUS BASES.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 462000, "total_venta": 462000, "costo_unit": 288750, "costo_total": 288750, "row": 35, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS (EQUIPOS)", "part": 1, "desc": "SUMINISTRO DE CONDENSADORA TIPO VRF, MARCA: CARRIER, MODELO: 38CF026H117016. PARA MANEJAR ", "unidad": "PZA", "cantidad": 3, "pu_venta": 18449.424, "total_venta": 55348.272, "costo_unit": 10147.18, "costo_total": 30441.54, "row": 42, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS (EQUIPOS)", "part": 2, "desc": "SUMINISTRO DE EVAPORADOR TIPO CASSETTE VRF, MARCA: CARRIER, MODELO: 40VK024. PARA MANEJAR ", "unidad": "PZA", "cantidad": 26, "pu_venta": 1207.728, "total_venta": 31400.928, "costo_unit": 664.25, "costo_total": 17270.5, "row": 43, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS (EQUIPOS)", "part": 3, "desc": "SUMINISTRO DE EVAPORADOR TIPO CASSETTE VRF, MARCA: CARRIER, MODELO: 40VK020. PARA MANEJAR ", "unidad": "PZA", "cantidad": 2, "pu_venta": 1110.736, "total_venta": 2221.472, "costo_unit": 610.9, "costo_total": 1221.8, "row": 44, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS (EQUIPOS)", "part": 4, "desc": "SUMINISTRO DE EVAPORADOR TIPO CASSETTE VRF, MARCA: CARRIER, MODELO: 40VK012. PARA MANEJAR ", "unidad": "PZA", "cantidad": 3, "pu_venta": 1038.768, "total_venta": 3116.304, "costo_unit": 571.32, "costo_total": 1713.96, "row": 45, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS (EQUIPOS)", "part": 5, "desc": "SUMINISTRO DE EXTRACTOR DE TECHO, MARCA: GREENHECK, MODELO: GB-120, PARA MANEJAR UN VOLUME", "unidad": "PZA", "cantidad": 1, "pu_venta": 1558.4, "total_venta": 1558.4, "costo_unit": 974, "costo_total": 974, "row": 46, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS (EQUIPOS)", "part": 6, "desc": "SUMINISTRO E INSTALACION DE PANEL 360 PARA CASSETTE DE 4 VIAS.", "unidad": "PZA", "cantidad": 31, "pu_venta": 183.34400000000002, "total_venta": 5683.664000000001, "costo_unit": 10.84, "costo_total": 336.04, "row": 47, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS (EQUIPOS)", "part": 7, "desc": "SUMINISTRO DE DERIVADORES PARA INTERIOR CON CAPACIDADES DESDE 0 A 511 BTUS.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 3360, "total_venta": 3360, "costo_unit": 1848, "costo_total": 1848, "row": 48, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS (EQUIPOS)", "part": 8, "desc": "CONTROLADOR INALAMBRICO PARA 2 Y 3 GEN, MARCA : CARRIER, MODELO: WR-86S-CM.", "unidad": "PZA", "cantidad": 31, "pu_venta": 117.34400000000001, "total_venta": 3637.664, "costo_unit": 64.54, "costo_total": 2000.7400000000002, "row": 49, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS (M.O.)", "part": 1, "desc": "SUMINISTRO E INSTALACION DE TUBERIA DE COBRE, CABLE DE CONTROL, CABLE DE USO RUDO, RTC. PA", "unidad": "LOTE", "cantidad": 1, "pu_venta": 569248.4, "total_venta": 569248.4, "costo_unit": 334852, "costo_total": 334852, "row": 55, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS (M.O.)", "part": 2, "desc": "MANO DE OBRA PARA LA INSTALACION DE CONDENSADORAS TIPO VRF EN SU UBICACION FINAL.", "unidad": "PZA", "cantidad": 3, "pu_venta": 14840, "total_venta": 44520, "costo_unit": 7000, "costo_total": 21000, "row": 56, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS (M.O.)", "part": 3, "desc": "MANO DE OBRA PARA LA INSTALACION DE EVAPORADORAS TIPO CASSETTE EN SU UBICACION FINAL.", "unidad": "PZA", "cantidad": 31, "pu_venta": 6390, "total_venta": 198090, "costo_unit": 3000, "costo_total": 93000, "row": 57, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS (M.O.)", "part": 4, "desc": "LAMINA GALVANIZADA CAL. 22 Y 24 PARA LA FABRICACION DE DUCTERIA DE EXTRACCION. INCLUYE: TO", "unidad": "KGS", "cantidad": 398, "pu_venta": 250, "total_venta": 99500, "costo_unit": 120, "costo_total": 47760, "row": 58, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS (M.O.)", "part": 5, "desc": "REJILLAS FABRICADAS EN ACERO GALVANIZADO PINTADAS EN COLOR BLANCO PARA BAÑOS.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 12486, "total_venta": 12486, "costo_unit": 6243, "costo_total": 6243, "row": 59, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS (M.O.)", "part": 6, "desc": "DUCTO FLEXIBLE AISLADO DE VARIOS DIAMETROS.", "unidad": "ML", "cantidad": 46, "pu_venta": 598.48, "total_venta": 27530.08, "costo_unit": 285, "costo_total": 13110, "row": 60, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS (M.O.)", "part": 7, "desc": "SOPORTERIA A BASE DE VARILLA ROSCADA, UNICANAL, TUERCAS Y ARANDELAS.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 14284.800000000001, "total_venta": 14284.800000000001, "costo_unit": 7936, "costo_total": 7936, "row": 61, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS (M.O.)", "part": 8, "desc": "MANO DE OBRA PARA LA INSTALACION ELECTROMECANICA DE EQUIPOS DE EXTRACCION, SE REQUIERE CON", "unidad": "PZA", "cantidad": 1, "pu_venta": 14200, "total_venta": 14200, "costo_unit": 6500, "costo_total": 6500, "row": 62, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS (M.O.)", "part": 9, "desc": "MANIOBRAS CON ANDAMIOS Y ESCALERAS.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 97256, "total_venta": 97256, "costo_unit": 30000, "costo_total": 30000, "row": 63, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS (M.O.)", "part": 10, "desc": "MANIOBRAS CON GRUA PARA LA COLOCACCION DE EQUIPOS EN SU UBICACION FINAL: INCLUYE ARRASTRE ", "unidad": "LOTE", "cantidad": 1, "pu_venta": 63000, "total_venta": 63000, "costo_unit": 35000, "costo_total": 35000, "row": 64, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS SATELITE (EQUIPOS)", "part": 1, "desc": "SUMINISTRO DE CONDENSADORA TIPO VRF, MARCA: CARRIER, MODELO: 38CF016H117016. PARA MANEJAR ", "unidad": "PZA", "cantidad": 4, "pu_venta": 12546.64, "total_venta": 50186.56, "costo_unit": 6900.652, "costo_total": 27602.608, "row": 71, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS SATELITE (EQUIPOS)", "part": 2, "desc": "SUMINISTRO DE EVAPORADOR TIPO CASSETTE VRF, MARCA: CARRIER, MODELO: 40VK024. PARA MANEJAR ", "unidad": "PZA", "cantidad": 26, "pu_venta": 1207.728, "total_venta": 31400.928, "costo_unit": 664.2504, "costo_total": 17270.5104, "row": 72, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS SATELITE (EQUIPOS)", "part": 3, "desc": "SUMINISTRO DE EVAPORADOR TIPO CASSETTE VRF, MARCA: CARRIER, MODELO: 40VK012. PARA MANEJAR ", "unidad": "PZA", "cantidad": 2, "pu_venta": 1038.768, "total_venta": 2077.536, "costo_unit": 571.3224, "costo_total": 1142.6448, "row": 73, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS SATELITE (EQUIPOS)", "part": 4, "desc": "SUMINISTRO DE EXTRACTOR DE TECHO, MARCA: GREENHECK, MODELO: GB-120, PARA MANEJAR UN VOLUME", "unidad": "PZA", "cantidad": 2, "pu_venta": 1558.4, "total_venta": 3116.8, "costo_unit": 974, "costo_total": 1948, "row": 74, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS SATELITE (EQUIPOS)", "part": 5, "desc": "SUMINISTRO E INSTALACION DE PANEL 360 PARA CASSETTE DE 4 VIAS.", "unidad": "PZA", "cantidad": 28, "pu_venta": 183.34400000000002, "total_venta": 5133.6320000000005, "costo_unit": 100.8392, "costo_total": 2823.4976, "row": 75, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS SATELITE (EQUIPOS)", "part": 6, "desc": "SUMINISTRO DE DERIVADORES PARA INTERIOR CON CAPACIDADES DESDE 0 A 511 BTUS.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 1545.6000000000001, "total_venta": 1545.6000000000001, "costo_unit": 850.08, "costo_total": 850.08, "row": 76, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS SATELITE (EQUIPOS)", "part": 7, "desc": "CONTROLADOR INALAMBRICO PARA 2 Y 3 GEN, MARCA : CARRIER, MODELO: WR-86S-CM.", "unidad": "PZA", "cantidad": 28, "pu_venta": 117.34400000000001, "total_venta": 3285.632, "costo_unit": 64.53920000000001, "costo_total": 1807.0976000000003, "row": 77, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC OFICINAS SATELITE (M.O.)", "part": 1, "desc": "SUMINISTRO E INSTALACION DE TUBERIA DE COBRE, CABLE DE CONTROL, CABLE DE USO RUDO, RTC. PA", "unidad": "LOTE", "cantidad": 1, "pu_venta": 375281.8, "total_venta": 375281.8, "costo_unit": 220754, "costo_total": 220754, "row": 84, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS SATELITE (M.O.)", "part": 2, "desc": "MANO DE OBRA PARA LA INSTALACION DE CONDENSADORAS TIPO VRF EN SU UBICACION FINAL.", "unidad": "PZA", "cantidad": 4, "pu_venta": 14840, "total_venta": 59360, "costo_unit": 7000, "costo_total": 28000, "row": 85, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS SATELITE (M.O.)", "part": 3, "desc": "MANO DE OBRA PARA LA INSTALACION DE EVAPORADORAS TIPO CASSETTE EN SU UBICACION FINAL.", "unidad": "PZA", "cantidad": 28, "pu_venta": 6390, "total_venta": 178920, "costo_unit": 3000, "costo_total": 84000, "row": 86, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS SATELITE (M.O.)", "part": 4, "desc": "LAMINA GALVANIZADA CAL. 22 Y 24 PARA LA FABRICACION DE DUCTERIA DE EXTRACCION. INCLUYE: TO", "unidad": "KGS", "cantidad": 734, "pu_venta": 250, "total_venta": 183500, "costo_unit": 120, "costo_total": 88080, "row": 87, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS SATELITE (M.O.)", "part": 5, "desc": "REJILLAS FABRICADAS EN ACERO GALVANIZADO PINTADAS EN COLOR BLANCO PARA BAÑOS.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 13611.6, "total_venta": 13611.6, "costo_unit": 7562, "costo_total": 7562, "row": 88, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS SATELITE (M.O.)", "part": 6, "desc": "DUCTO FLEXIBLE AISLADO DE VARIOS DIAMETROS.", "unidad": "ML", "cantidad": 86, "pu_venta": 598.48, "total_venta": 51469.28, "costo_unit": 285, "costo_total": 24510, "row": 89, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS SATELITE (M.O.)", "part": 7, "desc": "SOPORTERIA A BASE DE VARILLA ROSCADA, UNICANAL, TUERCAS Y ARANDELAS.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 15760.800000000001, "total_venta": 15760.800000000001, "costo_unit": 8756, "costo_total": 8756, "row": 90, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS SATELITE (M.O.)", "part": 8, "desc": "MANO DE OBRA PARA LA INSTALACION ELECTROMECANICA DE EQUIPOS DE EXTRACCION, SE REQUIERE CON", "unidad": "PZA", "cantidad": 1, "pu_venta": 14200, "total_venta": 14200, "costo_unit": 6500, "costo_total": 6500, "row": 91, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS SATELITE (M.O.)", "part": 9, "desc": "MANIOBRAS CON ANDAMIOS Y ESCALERAS.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 65303, "total_venta": 65303, "costo_unit": 25000, "costo_total": 25000, "row": 92, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC OFICINAS SATELITE (M.O.)", "part": 10, "desc": "MANIOBRAS CON GRUA PARA LA COLOCACCION DE EQUIPOS EN SU UBICACION FINAL: INCLUYE ARRASTRE ", "unidad": "LOTE", "cantidad": 1, "pu_venta": 54000, "total_venta": 54000, "costo_unit": 30000, "costo_total": 30000, "row": 93, "currency": "MXN", "tipo": "M.O."}, {"section": "WASTE DUMPSTER ROOM (EQUIPOS)", "part": 1, "desc": "SUMINISTRO DE ECTRACTOR DE MURO, MARCA: GREENHECK, MODELO: SBE-2L42-30, PARA MANEJAR UN VO", "unidad": "PZA", "cantidad": 1, "pu_venta": 3807.1499999999996, "total_venta": 3807.1499999999996, "costo_unit": 2538.1, "costo_total": 2538.1, "row": 100, "currency": "USD", "tipo": "Equipo"}, {"section": "WASTE DUMPSTER ROOM (EQUIPOS)", "part": 2, "desc": "SUMINISTRO DE LOUVER, MARCA: NAMM, MODELO: HL636DA, CON MEDIDAS DE 36\" X 36\" Y MARCO DE 6\"", "unidad": "PZA", "cantidad": 2, "pu_venta": 510, "total_venta": 1020, "costo_unit": 300, "costo_total": 600, "row": 101, "currency": "USD", "tipo": "Equipo"}, {"section": "WASTE DUMPSTER ROOM (M.O.)", "part": 1, "desc": "MANO DE OBRA PARA LA INSTALACION ELECTROMECANICA DE EQUIPOS DE EXTRACCION EN MURO. SE NECE", "unidad": "PZA", "cantidad": 1, "pu_venta": 12500, "total_venta": 12500, "costo_unit": 6500, "costo_total": 6500, "row": 108, "currency": "MXN", "tipo": "M.O."}, {"section": "WASTE DUMPSTER ROOM (M.O.)", "part": 2, "desc": "MANO DE OBRA PARA LA INSTALACION DE LOUVERS EN MURO, NO INCLUYE: SORPORTE DE LAMINA GALVAN", "unidad": "LOTE", "cantidad": 2, "pu_venta": 8400, "total_venta": 16800, "costo_unit": 4000, "costo_total": 8000, "row": 109, "currency": "MXN", "tipo": "M.O."}, {"section": "WASTE DUMPSTER ROOM (M.O.)", "part": 3, "desc": "MANIOBRAS CON EQUIPO DE ELEVACION Y BRAZO ARTICULADO.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 25000, "total_venta": 25000, "costo_unit": 12000, "costo_total": 12000, "row": 110, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC CASESTAS 1, 2 & 3 (EQUIPOS)", "part": 1, "desc": "SUMINISTRO DE EQUIPO DE AIRE ACONDICIONADO TIPO MINISPLIT, MARCA: CARRIER, MODELO: 53PXQ24", "unidad": "PZA", "cantidad": 3, "pu_venta": 1846.5, "total_venta": 5539.5, "costo_unit": 1231, "costo_total": 3693, "row": 117, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC CASESTAS 1, 2 & 3 (EQUIPOS)", "part": 2, "desc": "SUMINISTRO DE EXTRACTOR DE TECHO O MURO, MARCA: GREENHECK, MODELO: SP-B150, PARA MANEJAR U", "unidad": "PZA", "cantidad": 3, "pu_venta": 424.83000000000004, "total_venta": 1274.4900000000002, "costo_unit": 202.3, "costo_total": 606.9000000000001, "row": 118, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC CASESTAS 1, 2 & 3 (M.O.)", "part": 1, "desc": "MANO DE OBRA PARA LA INSTALACION DE MINISPLIT, INCLUYE: TUBERIA DE COBRE, ARMAFLEX COMO AI", "unidad": "PZA", "cantidad": 3, "pu_venta": 10500, "total_venta": 31500, "costo_unit": 5000, "costo_total": 15000, "row": 125, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC CASESTAS 1, 2 & 3 (M.O.)", "part": 2, "desc": "MANO DE OBRA PARA LA INSTALACION DE EXTRACTOR DE BAÑO. INCLUYE: TODO LO NECESARIO PARA UNA", "unidad": "PZA", "cantidad": 3, "pu_venta": 7350, "total_venta": 22050, "costo_unit": 3500, "costo_total": 10500, "row": 126, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC FORKLIFT MAINTENANCE (EQUIPOS)", "part": 1, "desc": "SUMINISTRO DE EXTRACTOR DE TECHO, MARCA: GREENHECK, MODELO: GB-160-15, PARA MANEJAR UN VOL", "unidad": "PZA", "cantidad": 1, "pu_venta": 2984, "total_venta": 2984, "costo_unit": 1865, "costo_total": 1865, "row": 133, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC FORKLIFT MAINTENANCE (M.O.)", "part": 1, "desc": "LAMINA GALVANIZADA CAL. 24 PARA LA FABRICACION DE DUCTERIA DE EXTRACCION. INCLUYE: TODO LO", "unidad": "KGS", "cantidad": 450, "pu_venta": 250, "total_venta": 112500, "costo_unit": 120, "costo_total": 54000, "row": 140, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC FORKLIFT MAINTENANCE (M.O.)", "part": 2, "desc": "REJILLAS Y DIFUSORES FABRICADOS EN ACERO GALVANIZADO PINTADOS EN COLOR BLANCO. PARA BAÑOS", "unidad": "LOTE", "cantidad": 1, "pu_venta": 11760, "total_venta": 11760, "costo_unit": 5600, "costo_total": 5600, "row": 141, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC FORKLIFT MAINTENANCE (M.O.)", "part": 3, "desc": "DUCTO FLEXIBLE AISLADO DE VARIOS DIAMETROS.", "unidad": "ML", "cantidad": 70, "pu_venta": 598.48, "total_venta": 41893.6, "costo_unit": 285, "costo_total": 19950, "row": 142, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC FORKLIFT MAINTENANCE (M.O.)", "part": 4, "desc": "SOPORTERIA A BASE DE VARILLA ROSCADA Y UNICANAL, TUERCAS Y ARANDELAS.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 11123, "total_venta": 11123, "costo_unit": 6235, "costo_total": 6235, "row": 143, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC FORKLIFT MAINTENANCE (M.O.)", "part": 5, "desc": "MANO DE OBRA PARA LA INSTALACION ELECTROMECANICA DE EQUIPOS DE EXTRACCION, SE REQUIERE CON", "unidad": "PZA", "cantidad": 1, "pu_venta": 14200, "total_venta": 14200, "costo_unit": 6500, "costo_total": 6500, "row": 144, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC FORKLIFT MAINTENANCE (M.O.)", "part": 6, "desc": "MANIOBRAS CON ANDAMIO Y ESCALERAS.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 16000, "total_venta": 16000, "costo_unit": 9000, "costo_total": 9000, "row": 145, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC FORKLIFT MAINTENANCE (M.O.)", "part": 7, "desc": "MANIOBRAS CON GRUA PARA LA INSTALACION DE EQUIPOS Y ARRASTRE EN CUBIERTA HASTA SU UBICACIÓ", "unidad": "LOTE", "cantidad": 1, "pu_venta": 32000, "total_venta": 32000, "costo_unit": 15000, "costo_total": 15000, "row": 146, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC FORKLIFT CHARGER (EQUIPOS)", "part": 1, "desc": "SUMINISTRO DE EXTRACTOR DE TECHO, MARCA: GREENHECK, MODELO: GB-160-15, PARA MANEJAR UN VOL", "unidad": "PZA", "cantidad": 1, "pu_venta": 7764.8, "total_venta": 7764.8, "costo_unit": 4853, "costo_total": 4853, "row": 153, "currency": "USD", "tipo": "Equipo"}, {"section": "SISTEMA HVAC FORKLIFT CHARGER (M.O.)", "part": 1, "desc": "LAMINA GALVANIZADA CAL. 24 PARA LA FABRICACION DE DUCTERIA DE EXTRACCION. INCLUYE: TODO LO", "unidad": "KGS", "cantidad": 845, "pu_venta": 250, "total_venta": 211250, "costo_unit": 120, "costo_total": 101400, "row": 160, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC FORKLIFT CHARGER (M.O.)", "part": 2, "desc": "REJILLAS Y DIFUSORES FABRICADOS EN ACERO GALVANIZADO PINTADOS EN COLOR BLANCO. PARA BAÑOS", "unidad": "LOTE", "cantidad": 1, "pu_venta": 11760, "total_venta": 11760, "costo_unit": 5600, "costo_total": 5600, "row": 161, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC FORKLIFT CHARGER (M.O.)", "part": 3, "desc": "DUCTO FLEXIBLE AISLADO DE VARIOS DIAMETROS.", "unidad": "ML", "cantidad": 70, "pu_venta": 598.48, "total_venta": 41893.6, "costo_unit": 285, "costo_total": 19950, "row": 162, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC FORKLIFT CHARGER (M.O.)", "part": 4, "desc": "SOPORTERIA A BASE DE VARILLA ROSCADA Y UNICANAL, TUERCAS Y ARANDELAS.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 11123, "total_venta": 11123, "costo_unit": 6235, "costo_total": 6235, "row": 163, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC FORKLIFT CHARGER (M.O.)", "part": 5, "desc": "MANO DE OBRA PARA LA INSTALACION ELECTROMECANICA DE EQUIPOS DE EXTRACCION, SE REQUIERE CON", "unidad": "PZA", "cantidad": 1, "pu_venta": 14200, "total_venta": 14200, "costo_unit": 6500, "costo_total": 6500, "row": 164, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC FORKLIFT CHARGER (M.O.)", "part": 6, "desc": "MANIOBRAS CON ANDAMIO Y ESCALERAS.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 16000, "total_venta": 16000, "costo_unit": 9000, "costo_total": 9000, "row": 165, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA HVAC FORKLIFT CHARGER (M.O.)", "part": 7, "desc": "MANIOBRAS CON GRUA PARA LA INSTALACION DE EQUIPOS Y ARRASTRE EN CUBIERTA HASTA SU UBICACIÓ", "unidad": "LOTE", "cantidad": 1, "pu_venta": 32000, "total_venta": 32000, "costo_unit": 15000, "costo_total": 15000, "row": 166, "currency": "MXN", "tipo": "M.O."}, {"section": "WAREHOUSE RESTROOMS 1 & 2 (EQUIPOS)", "part": 1, "desc": "SUMINISTRO DE EXTRACTOR DE TECHO, MARCA: GREENHECK, MODELO: GB-160-15, PARA MANEJAR UN VOL", "unidad": "PZA", "cantidad": 2, "pu_venta": 2984, "total_venta": 5968, "costo_unit": 1865, "costo_total": 3730, "row": 173, "currency": "USD", "tipo": "Equipo"}, {"section": "WAREHOUSE RESTROOMS 1 & 2 (M.O.)", "part": 1, "desc": "LAMINA GALVANIZADA CAL. 24 PARA LA FABRICACION DE DUCTERIA DE EXTRACCION. INCLUYE: TODO LO", "unidad": "KGS", "cantidad": 922, "pu_venta": 250, "total_venta": 230500, "costo_unit": 120, "costo_total": 110640, "row": 180, "currency": "MXN", "tipo": "M.O."}, {"section": "WAREHOUSE RESTROOMS 1 & 2 (M.O.)", "part": 2, "desc": "REJILLAS Y DIFUSORES FABRICADOS EN ACERO GALVANIZADO PINTADOS EN COLOR BLANCO. PARA BAÑOS", "unidad": "LOTE", "cantidad": 1, "pu_venta": 24753, "total_venta": 24753, "costo_unit": 14222, "costo_total": 14222, "row": 181, "currency": "MXN", "tipo": "M.O."}, {"section": "WAREHOUSE RESTROOMS 1 & 2 (M.O.)", "part": 3, "desc": "DUCTO FLEXIBLE AISLADO DE VARIOS DIAMETROS.", "unidad": "ML", "cantidad": 180, "pu_venta": 598.48, "total_venta": 107726.40000000001, "costo_unit": 285, "costo_total": 51300, "row": 182, "currency": "MXN", "tipo": "M.O."}, {"section": "WAREHOUSE RESTROOMS 1 & 2 (M.O.)", "part": 4, "desc": "SOPORTERIA A BASE DE VARILLA ROSCADA Y UNICANAL, TUERCAS Y ARANDELAS.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 16240, "total_venta": 16240, "costo_unit": 11000, "costo_total": 11000, "row": 183, "currency": "MXN", "tipo": "M.O."}, {"section": "WAREHOUSE RESTROOMS 1 & 2 (M.O.)", "part": 5, "desc": "MANO DE OBRA PARA LA INSTALACION ELECTROMECANICA DE EQUIPOS DE EXTRACCION, SE REQUIERE CON", "unidad": "PZA", "cantidad": 2, "pu_venta": 14200, "total_venta": 28400, "costo_unit": 6500, "costo_total": 13000, "row": 184, "currency": "MXN", "tipo": "M.O."}, {"section": "WAREHOUSE RESTROOMS 1 & 2 (M.O.)", "part": 6, "desc": "MANIOBRAS CON ANDAMIO Y ESCALERAS.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 22000, "total_venta": 22000, "costo_unit": 11000, "costo_total": 11000, "row": 185, "currency": "MXN", "tipo": "M.O."}, {"section": "WAREHOUSE RESTROOMS 1 & 2 (M.O.)", "part": 7, "desc": "MANIOBRAS CON GRUA PARA LA INSTALACION DE EQUIPOS Y ARRASTRE EN CUBIERTA HASTA SU UBICACIÓ", "unidad": "LOTE", "cantidad": 1, "pu_venta": 32000, "total_venta": 32000, "costo_unit": 15000, "costo_total": 15000, "row": 186, "currency": "MXN", "tipo": "M.O."}, {"section": "SUBESTATION ROOM (EQUIPOS)", "part": 1, "desc": "SUMINISTRO DE ECTRACTOR DE MURO, MARCA: GREENHECK, MODELO: SBE-2L42-30, PARA MANEJAR UN VO", "unidad": "PZA", "cantidad": 1, "pu_venta": 5418.75, "total_venta": 5418.75, "costo_unit": 3612.5, "costo_total": 3612.5, "row": 193, "currency": "USD", "tipo": "Equipo"}, {"section": "SUBESTATION ROOM (EQUIPOS)", "part": 1, "desc": "SUMINISTRO DE LOUVER, MARCA: NAMM, MODELO: HL636DA, CON MEDIDAS DE 48\" X 48\" Y MARCO DE 6\"", "unidad": "PZA", "cantidad": 2, "pu_venta": 620, "total_venta": 1240, "costo_unit": 300, "costo_total": 600, "row": 194, "currency": "USD", "tipo": "Equipo"}, {"section": "SUBESTATION ROOM (M.O.)", "part": 1, "desc": "MANO DE OBRA PARA LA INSTALACION ELECTROMECANICA DE EQUIPOS DE EXTRACCION EN MURO. SE NECE", "unidad": "PZA", "cantidad": 1, "pu_venta": 12500, "total_venta": 12500, "costo_unit": 6500, "costo_total": 6500, "row": 201, "currency": "MXN", "tipo": "M.O."}, {"section": "SUBESTATION ROOM (M.O.)", "part": 2, "desc": "MANO DE OBRA PARA LA INSTALACION DE LOUVERS EN MURO, NO INCLUYE: SORPORTE DE LAMINA GALVAN", "unidad": "LOTE", "cantidad": 2, "pu_venta": 8400, "total_venta": 16800, "costo_unit": 4000, "costo_total": 8000, "row": 202, "currency": "MXN", "tipo": "M.O."}, {"section": "SUBESTATION ROOM (M.O.)", "part": 3, "desc": "MANIOBRAS CON EQUIPO DE ELEVACION Y BRAZO ARTICULADO.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 25000, "total_venta": 25000, "costo_unit": 12000, "costo_total": 12000, "row": 203, "currency": "MXN", "tipo": "M.O."}, {"section": "PUMP ROOM (EQUIPOS)", "part": 1, "desc": "SUMINISTRO DE ECTRACTOR DE MURO, MARCA: GREENHECK, MODELO: SBE-2L42-30, PARA MANEJAR UN VO", "unidad": "PZA", "cantidad": 1, "pu_venta": 3807.1499999999996, "total_venta": 3807.1499999999996, "costo_unit": 2538.1, "costo_total": 2538.1, "row": 210, "currency": "USD", "tipo": "Equipo"}, {"section": "PUMP ROOM (EQUIPOS)", "part": 2, "desc": "SUMINISTRO DE LOUVER, MARCA: NAMM, MODELO: HL636DA, CON MEDIDAS DE 36\" X 36\" Y MARCO DE 6\"", "unidad": "PZA", "cantidad": 2, "pu_venta": 510, "total_venta": 1020, "costo_unit": 300, "costo_total": 600, "row": 211, "currency": "USD", "tipo": "Equipo"}, {"section": "PUMP ROOM (M.O.)", "part": 1, "desc": "MANO DE OBRA PARA LA INSTALACION ELECTROMECANICA DE EQUIPOS DE EXTRACCION EN MURO. SE NECE", "unidad": "PZA", "cantidad": 1, "pu_venta": 12500, "total_venta": 12500, "costo_unit": 6500, "costo_total": 6500, "row": 218, "currency": "MXN", "tipo": "M.O."}, {"section": "PUMP ROOM (M.O.)", "part": 2, "desc": "MANO DE OBRA PARA LA INSTALACION DE LOUVERS EN MURO, NO INCLUYE: SORPORTE DE LAMINA GALVAN", "unidad": "LOTE", "cantidad": 2, "pu_venta": 8400, "total_venta": 16800, "costo_unit": 4000, "costo_total": 8000, "row": 219, "currency": "MXN", "tipo": "M.O."}, {"section": "PUMP ROOM (M.O.)", "part": 3, "desc": "MANIOBRAS CON EQUIPO DE ELEVACION Y BRAZO ARTICULADO.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 25000, "total_venta": 25000, "costo_unit": 12000, "costo_total": 12000, "row": 220, "currency": "MXN", "tipo": "M.O."}, {"section": "SISTEMA DE AUTOMATIZACION DE EQUIPOS (ON/OFF)", "part": 1, "desc": "SUMINISTRO DE UN GABINETE DE CONTORL PARA EL MONITOREO DE 33 EQUIPOS TIPO LAVADORAS DE AIR", "unidad": "LOTE", "cantidad": 1, "pu_venta": 273324.8, "total_venta": 273324.8, "costo_unit": 195232, "costo_total": 195232, "row": 227, "currency": "MXN", "tipo": "Equipo"}, {"section": "SISTEMA DE AUTOMATIZACION DE EQUIPOS (ON/OFF)", "part": 2, "desc": "SERVICIOS EN SITIO PARA LA CONFIGURACION, EL COMISIONAMIENTO DE PUNTO Y LA DOCUMENTACION.", "unidad": "LOTE", "cantidad": 1, "pu_venta": 201947.19999999998, "total_venta": 201947.19999999998, "costo_unit": 144248, "costo_total": 144248, "row": 228, "currency": "MXN", "tipo": "Equipo"}, {"section": "SISTEMA DE AUTOMATIZACION DE EQUIPOS (ON/OFF)", "part": 3, "desc": "SERVICIOS EN SITIO PARA LA INSTALACION Y CONEXIÓN DEL GABINETE DE CONTROL, CONSIDERANDO UN", "unidad": "LOTE", "cantidad": 1, "pu_venta": 251901.99999999997, "total_venta": 251901.99999999997, "costo_unit": 179930, "costo_total": 179930, "row": 229, "currency": "MXN", "tipo": "Equipo"}]}, "multiv": {"kpis": {"costoDirecto": 1525895, "ventaTotal": 2649500, "indirectoTotal": 366214.80000000005, "duracionMeses": 3, "tc": 17.5, "monedaPrincipal": "MXN"}, "rubros": [{"rubro": "Extractores", "valorizado": 653520}, {"rubro": "Louvers", "valorizado": 252000}, {"rubro": "Paquete de A/C", "valorizado": 175000}, {"rubro": "Minisplit", "valorizado": 14875}, {"rubro": "Lamina Galv y Soporteria", "valorizado": 157500}, {"rubro": "Ducto Flexible, Difusores y Rejillas", "valorizado": 15750}, {"rubro": "Termostatos", "valorizado": 13125}, {"rubro": "Mano de obra", "valorizado": 191625}, {"rubro": "Maniobras Grua y Elevacion", "valorizado": 52500}], "items": [{"section": "NAVE", "part": 1, "desc": "EXTRACTOR DE AIRE DE TECHO MCA. GREENHECK, MOD. RHUMO. DE 30,000 CFM. A TRABAJAR A 440v.", "unidad": "PZA", "cantidad": 8, "pu_venta": 6370, "total_venta": 50960, "costo_unit": 4368, "costo_total": 34944, "currency": "USD", "tipo": "Equipo", "row": 22}, {"section": "NAVE", "part": 2, "desc": "LOUVERS FABRICADOS EN ACERO GALVANIZADO COLOR BLANCO DE 96\"X48\". INCLUYE MALLA PAJARERA  Y RAIN HOOD", "unidad": "PZA", "cantidad": 18, "pu_venta": 1100, "total_venta": 19800, "costo_unit": 800, "costo_total": 14400, "currency": "USD", "tipo": "Equipo", "row": 23}, {"section": "NAVE", "part": 3, "desc": "MANO DE OBRA PARA LA INSTALACION ELECTROMECANICA DE EQUIPOS DE EXTRACCION,  CONEXIÓN ELECTRICA A PIE", "unidad": "PZA", "cantidad": 8, "pu_venta": 1250, "total_venta": 10000, "costo_unit": 500, "costo_total": 4000, "currency": "USD", "tipo": "M.O.", "row": 24}, {"section": "NAVE", "part": 4, "desc": "MANO DE OBRA PARA LA INSTALACION DE LOUVERS EN MURO. NO INCLUYE SOPORTE DE LAMINA GALVANIZADA, NO IN", "unidad": "PZA", "cantidad": 18, "pu_venta": 1250, "total_venta": 22500, "costo_unit": 350, "costo_total": 6300, "currency": "USD", "tipo": "M.O.", "row": 25}, {"section": "NAVE", "part": 5, "desc": "SISTEMA DE EXTRACCION DE BAÑOS DE OFICINAS", "unidad": "LOTE", "cantidad": 1, "pu_venta": 2280, "total_venta": 2280, "costo_unit": 1200, "costo_total": 1200, "currency": "USD", "tipo": "Equipo", "row": 26}, {"section": "NAVE", "part": 6, "desc": "MANIOBRAS CON GRUA Y EQUIPO DE ELEVACION PARA LA INSTALACION DE EQUIPOS EN AZOTEA Y LOUVERD", "unidad": "LOTE", "cantidad": 1, "pu_venta": 3980, "total_venta": 3980, "costo_unit": 3000, "costo_total": 3000, "currency": "USD", "tipo": "M.O.", "row": 27}, {"section": "OFICINAS", "part": 1, "desc": "UNIDAD DE AIRE ACONDICIONADO TIPO PAQUETE, MARCA CARRIER  CON DESCARGA DE AIRE DE INYECCIÓN VERTICAL", "unidad": "PZA", "cantidad": 1, "pu_venta": 12300, "total_venta": 12300, "costo_unit": 10000, "costo_total": 10000, "currency": "USD", "tipo": "Equipo", "row": 32}, {"section": "OFICINAS", "part": 2, "desc": "LAMINA GALVANIZADA CALIBRE 22, 24 Y 26 PARA FABRICACION DE DUCTERIA CUADRADA, INCLUYE AISLAMIENTO TE", "unidad": "KG", "cantidad": 1125, "pu_venta": 18, "total_venta": 20250, "costo_unit": 8, "costo_total": 9000, "currency": "USD", "tipo": "Equipo", "row": 33}, {"section": "OFICINAS", "part": 3, "desc": "SUMINISTRO E INSTALACION DE DUCTO FLEXIBLE, DIFUSORES Y REJILLAS DE RETORNO", "unidad": "LOTE", "cantidad": 1, "pu_venta": 1850, "total_venta": 1850, "costo_unit": 900, "costo_total": 900, "currency": "USD", "tipo": "Equipo", "row": 34}, {"section": "OFICINAS", "part": 4, "desc": "SUMINISTSRO E INSTALACION DE TERMOSTATOS", "unidad": "PZA", "cantidad": 1, "pu_venta": 1850, "total_venta": 1850, "costo_unit": 750, "costo_total": 750, "currency": "USD", "tipo": "Equipo", "row": 35}, {"section": "OFICINAS", "part": 5, "desc": "MANO DE OBRA PARA LA INTERCONEXION ELECTROMECANICA DE EQUIPOS DE AIRE ACONDICIONADO", "unidad": "PZA", "cantidad": 1, "pu_venta": 1550, "total_venta": 1550, "costo_unit": 650, "costo_total": 650, "currency": "USD", "tipo": "M.O.", "row": 36}, {"section": "OFICINAS", "part": 6, "desc": "SISTEMA DE EXTRACCION DE BAÑOS DE OFICINAS", "unidad": "LOTE", "cantidad": 1, "pu_venta": 2280, "total_venta": 2280, "costo_unit": 1200, "costo_total": 1200, "currency": "USD", "tipo": "Equipo", "row": 37}, {"section": "OFICINAS", "part": 7, "desc": "MANIOBRA CON GRUA, MANIOBRAS PARA COLOCACION DE EQUIPOS EN AZOTEA Y EQUIPO DE ELEVACION", "unidad": "LOTE", "cantidad": 1, "pu_venta": 850, "total_venta": 850, "costo_unit": null, "costo_total": 0, "currency": "USD", "tipo": "M.O.", "row": 38}, {"section": "OFICINAS", "part": 8, "desc": "SUMINISTRO E INSTALACION DE MINI SPLIT MCA. CARRIER DE 2 TON. PARA CAFETERIA", "unidad": "PZA", "cantidad": 1, "pu_venta": 950, "total_venta": 950, "costo_unit": 850, "costo_total": 850, "currency": "USD", "tipo": "Equipo", "row": 39}]}};
+
+// DSV Juárez retirada temporalmente de la vista a petición del usuario (fecha: hoy).
+// Sus datos SIGUEN INTACTOS en el Google Sheet (pestañas Movimientos/Presupuesto/Config,
+// filas con obra='dsv') -- esto NO borra ni toca nada, solo la oculta de esta lista.
+// Para reincorporarla: descomentar la línea de abajo.
+const OBRAS = [
+  // { id:'dsv', nombre:'DSV Juárez', cliente:'GP Construcciones', color:'#2568ac', ...OBRA_BUNDLE.dsv },
+  { id:'multiv', nombre:'MULTI V', cliente:'FINSA', color:'#6a45c9', ...OBRA_BUNDLE.multiv }
+];
+
+const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzPto12aq8JZNb44FcCB1wQEWhFhZP4vd4oT5mQwQRzl7JOcG8HqbNbLjJtFl6r3xob/exec';
+
+let TC = 17.5;
+let currentObraId = null; // null = "Todas las obras"
+let allMovimientos = [];
+let allPresupuesto = [];
+let allConfig = [];
+let sheetAvailable = false;
+let pendingWrites = 0;
+
+const fmtMXN = v => (v<0?'-':'') + '$' + Math.round(Math.abs(v)).toLocaleString('es-MX');
+
+// ---------- Formateo con comas de miles en campos de texto editables ----------
+function formatThousands(str){
+  let clean = (str||'').replace(/[^\d.]/g, '');
+  const firstDot = clean.indexOf('.');
+  if(firstDot!==-1){ clean = clean.slice(0,firstDot+1) + clean.slice(firstDot+1).replace(/\./g,''); }
+  const parts = clean.split('.');
+  parts[0] = parts[0].replace(/^0+(?=\d)/, '');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return parts.length>1 ? parts[0] + '.' + parts[1].slice(0,2) : parts[0];
+}
+function parseFormatted(str){
+  return parseFloat((str||'').replace(/,/g,'')) || 0;
+}
+function attachThousandsFormatting(input){
+  if(!input || input.dataset.formatAttached) return;
+  input.dataset.formatAttached = '1';
+  input.addEventListener('input', (e)=>{
+    const cursorFromEnd = e.target.value.length - e.target.selectionStart;
+    e.target.value = formatThousands(e.target.value);
+    const pos = Math.max(0, e.target.value.length - cursorFromEnd);
+    e.target.setSelectionRange(pos, pos);
+  });
+}
+// Formatea un valor en la moneda nativa de la obra (MXN para DSV, USD para MULTI V) con su sufijo
+function fmtNativa(v, o){
+  if(o.kpis.monedaPrincipal === 'USD'){
+    return (v<0?'-':'') + '$' + Math.round(Math.abs(v)).toLocaleString('en-US') + ' USD';
+  }
+  return fmtMXN(v);
+}
+const fmtPct = v => (v>=0?'+':'') + v.toFixed(1) + '%';
+const COLORS = ['#2568ac','#1c7f74','#d9642c','#c93c34','#6a45c9','#3aa0c9','#7fb069','#e0a458'];
+
+function obraById(id){ return OBRAS.find(o=>o.id===id); }
+
+// ================= Capa de datos: Google Sheets consolidado =================
+async function sheetGetAll(){
+  try{
+    // cache:'no-store' + timestamp en la URL evita que el navegador (o un proxy)
+    // devuelva una respuesta vieja guardada en caché en vez de consultar el Sheet real.
+    const res = await fetch(SHEET_API_URL + '?action=getAll&_ts=' + Date.now(), { cache: 'no-store' });
+    if(!res.ok) throw new Error('bad');
+    const data = await res.json();
+    allMovimientos = data.movimientos || [];
+    allPresupuesto = data.presupuesto || [];
+    allConfig = data.config || [];
+    sheetAvailable = true;
+    document.getElementById('storage-banner').classList.add('hidden');
+    return data;
+  }catch(e){
+    sheetAvailable = false;
+    document.getElementById('storage-banner').classList.remove('hidden');
+    return null;
+  }
+}
+async function sheetPost(action, payload){
+  pendingWrites++;
+  try{
+    const res = await fetch(SHEET_API_URL, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(Object.assign({action}, payload)), cache: 'no-store'
+    });
+    const data = await res.json();
+    sheetAvailable = true;
+    return data;
+  }catch(e){
+    sheetAvailable = false;
+    return null;
+  }finally{ pendingWrites--; }
+}
+
+async function cargarTodo(){
+  const btn = document.getElementById('btn-refresh');
+  btn.classList.add('loading'); btn.textContent = 'Actualizando...';
+  if(pendingWrites === 0) await sheetGetAll();
+  renderCurrentView();
+  btn.classList.remove('loading'); btn.textContent = '🔄 Actualizar';
+  document.getElementById('updated-time').textContent =
+    'Actualizado ' + new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ================= Meses =================
+const MESES_NOMBRE = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function monthKey(fechaStr){ return (fechaStr||'').slice(0,7); } // 'YYYY-MM'
+function monthLabel(key){
+  const [y,mo] = key.split('-');
+  return MESES_NOMBRE[parseInt(mo,10)-1] + ' ' + y.slice(2);
+}
+
+// ================= Sidebar / navegación =================
+function renderSidebarNav(){
+  const activasBox = document.getElementById('nav-obras-list-activas');
+  const terminadasBox = document.getElementById('nav-obras-list-terminadas');
+  activasBox.innerHTML = '';
+  terminadasBox.innerHTML = '';
+  OBRAS.forEach(o=>{
+    const avance = avanceAutoDe(o);
+    const item = document.createElement('div');
+    item.className = 'nav-item';
+    item.id = 'nav-obra-'+o.id;
+    if(currentObraId === o.id) item.classList.add('active');
+    item.innerHTML = `<span class="nav-left"><span class="nav-dot" style="background:${o.color}"></span>${o.nombre}</span>`;
+    item.onclick = () => seleccionarObra(o.id);
+    (avance>=100 ? terminadasBox : activasBox).appendChild(item);
+  });
+}
+renderSidebarNav();
+
+function toggleSidebarSection(section){
+  const box = document.getElementById('nav-obras-list-'+section);
+  const chevron = document.getElementById('chevron-'+section);
+  box.classList.toggle('collapsed');
+  chevron.classList.toggle('collapsed');
+}
+window.toggleSidebarSection = toggleSidebarSection;
+
+function seleccionarObra(obraId){
+  currentObraId = obraId;
+  document.querySelectorAll('.sidebar .nav-item').forEach(n=>n.classList.remove('active'));
+  if(obraId === null){
+    document.getElementById('nav-todas').classList.add('active');
+    document.getElementById('view-todas').classList.remove('hidden');
+    document.getElementById('view-detalle').classList.add('hidden');
+    document.getElementById('topbar-eyebrow').textContent = 'Control financiero consolidado';
+    document.getElementById('topbar-title').textContent = 'Dashboard Maestro — Todas las Obras';
+  } else {
+    document.getElementById('nav-obra-'+obraId).classList.add('active');
+    document.getElementById('view-todas').classList.add('hidden');
+    document.getElementById('view-detalle').classList.remove('hidden');
+    const o = obraById(obraId);
+    document.getElementById('topbar-eyebrow').textContent = 'Control financiero por obra';
+    document.getElementById('topbar-title').textContent = 'Dashboard ' + o.nombre + ' — HVAC';
+    poblarFormularioObra(o);
+  }
+  renderCurrentView();
+}
+window.seleccionarObra = seleccionarObra;
+
+document.getElementById('f-tc').addEventListener('change', e=>{
+  TC = parseFloat(e.target.value) || 17.5;
+  renderCurrentView();
+});
+
+// ================= Helpers de datos por obra =================
+function movimientosDe(obraId){ return allMovimientos.filter(m=>m.obra===obraId); }
+function presupuestoDe(obraId){
+  const map = {};
+  allPresupuesto.filter(p=>p.obra===obraId).forEach(p=>{
+    const v = parseFloat(p.monto);
+    if(!isNaN(v)) map[p.categoria] = v;
+  });
+  return map;
+}
+function configDe(obraId){
+  const map = {};
+  allConfig.filter(c=>c.obra===obraId).forEach(c=>{ map[c.key] = c.value; });
+  return map;
+}
+function categoriasDe(o){ return o.rubros.map(r=>r.rubro).concat(['Indirectos']); }
+function defaultBudgetDe(o){
+  const map = {};
+  o.rubros.forEach(r=>{ map[r.rubro] = r.valorizado; });
+  map['Indirectos'] = o.kpis.indirectoTotal;
+  return map;
+}
+function presupuestoConDefaults(o){
+  const saved = presupuestoDe(o.id);
+  const def = defaultBudgetDe(o);
+  const cats = categoriasDe(o);
+  const result = {};
+  cats.forEach(c=>{
+    const s = saved[c];
+    result[c] = (s !== undefined && !isNaN(s) && s > 0) ? s : (def[c]||0);
+  });
+  return result;
+}
+// Convierte un movimiento a la moneda nativa de la obra (MXN para DSV, USD para MULTI V)
+function toNativa(entry, o){
+  if(o.kpis.monedaPrincipal === 'USD'){
+    return entry.moneda === 'MXN' ? parseFloat(entry.monto)/TC : parseFloat(entry.monto);
+  }
+  return entry.moneda === 'USD' ? parseFloat(entry.monto)*TC : parseFloat(entry.monto);
+}
+// Convierte un movimiento a MXN equivalente sin importar la obra (para agregados)
+function toMXNGlobal(entry){
+  return entry.moneda === 'USD' ? parseFloat(entry.monto)*TC : parseFloat(entry.monto);
+}
+function costoPresupuestadoTotalDe(o){
+  const pres = presupuestoConDefaults(o);
+  return Object.values(pres).reduce((s,v)=>s+v,0);
+}
+// Avance de obra automático: ingresos cobrados (anticipos + estimaciones) / precio de venta
+function totalIngresosNativoDe(o){
+  return movimientosDe(o.id).filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+toNativa(m,o),0);
+}
+function avanceAutoDe(o){
+  const venta = o.kpis.ventaTotal;
+  if(venta<=0) return 0;
+  return Math.min(100, Math.round((totalIngresosNativoDe(o)/venta)*100));
+}
+
+// ================= Vista: TODAS LAS OBRAS =================
+let chartTodas = null;
+function renderVistaTodas(){
+  const strip = document.getElementById('status-strip');
+  strip.innerHTML = `<div class="status-chip ${sheetAvailable?'ok':'warn'}"><span class="dot"></span>${sheetAvailable?'Conectado a Google Sheets':'Sin conexión'}</div>`;
+
+  let costoPres=0, venta=0, ingresos=0, egresos=0, avanceSum=0, avanceCount=0, pendiente=0;
+  const porSemana = {};
+
+  OBRAS.forEach(o=>{
+    const pres = costoPresupuestadoTotalDe(o);
+    const ventaObraMXN = o.kpis.monedaPrincipal==='USD' ? o.kpis.ventaTotal*TC : o.kpis.ventaTotal;
+    const presMXN = o.kpis.monedaPrincipal==='USD' ? pres*TC : pres;
+    costoPres += presMXN;
+    venta += ventaObraMXN;
+
+    const movs = movimientosDe(o.id);
+    let ingObra=0, egObra=0;
+    movs.forEach(m=>{
+      const mxn = toMXNGlobal(m);
+      if(m.tipo==='ingreso') ingObra += mxn; else egObra += mxn;
+      if(m.fecha){
+        const k = monthKey(m.fecha);
+        porSemana[k] = porSemana[k] || {ing:0, eg:0};
+        if(m.tipo==='ingreso') porSemana[k].ing += mxn; else porSemana[k].eg += mxn;
+      }
+    });
+    ingresos += ingObra; egresos += egObra;
+    pendiente += Math.max(0, ventaObraMXN - ingObra);
+
+    const cfg = configDe(o.id);
+    const avance = parseFloat(cfg.avance) || 0;
+    avanceSum += avance; avanceCount++;
+  });
+
+  const utilidadEsperada = venta - costoPres;
+  const utilidadActual = ingresos - egresos;
+  const gastoPct = costoPres>0 ? (egresos/costoPres*100) : 0;
+  const utilActualPct = ingresos>0 ? (utilidadActual/ingresos*100) : 0;
+  const utilFinalPct = venta>0 ? (utilidadEsperada/venta*100) : 0;
+
+  document.getElementById('kpi-ingresos').textContent = fmtMXN(ingresos);
+  document.getElementById('kpi-ingresos-tag').textContent = OBRAS.length + ' obras';
+  document.getElementById('kpi-gastos').textContent = fmtMXN(egresos);
+  const gTag = document.getElementById('kpi-gastos-tag');
+  gTag.textContent = gastoPct.toFixed(1) + '% del costo presupuestado';
+  gTag.className = 'kpi-tag ' + (gastoPct>100?'neg':(gastoPct>90?'neutral':'pos'));
+  document.getElementById('kpi-utilidad-actual').textContent = fmtMXN(utilidadActual);
+  const uaTag = document.getElementById('kpi-utilidad-actual-tag');
+  uaTag.textContent = ingresos>0 ? fmtPct(utilActualPct)+' utilidad actual' : 'Sin ingresos aún';
+  uaTag.className = 'kpi-tag ' + (utilidadActual>=0?'pos':'neg');
+  document.getElementById('kpi-utilidad-final').textContent = fmtMXN(utilidadEsperada);
+  document.getElementById('kpi-utilidad-final-tag').textContent = fmtPct(utilFinalPct) + ' utilidad final';
+
+  const avgAvance = avanceCount>0 ? Math.round(avanceSum/avanceCount) : 0;
+  document.getElementById('avance-promedio-display').textContent = avgAvance+'%';
+  document.getElementById('avance-promedio-fill').style.width = avgAvance+'%';
+  const enProceso = OBRAS.filter(o=>avanceAutoDe(o) < 100).length;
+  const terminadas = OBRAS.length - enProceso;
+  document.getElementById('ss-en-proceso').textContent = enProceso;
+  document.getElementById('ss-terminadas').textContent = terminadas;
+  document.getElementById('ss-pendiente').textContent = fmtMXN(pendiente);
+
+  const tbody = document.getElementById('obras-tbody');
+  tbody.innerHTML = OBRAS.map(o=>{
+    const movs = movimientosDe(o.id);
+    let ing=0, eg=0;
+    movs.forEach(m=>{ const mxn=toMXNGlobal(m); if(m.tipo==='ingreso') ing+=mxn; else eg+=mxn; });
+    const pres = costoPresupuestadoTotalDe(o);
+    const presMXN = o.kpis.monedaPrincipal==='USD' ? pres*TC : pres;
+    const ventaMXN = o.kpis.monedaPrincipal==='USD' ? o.kpis.ventaTotal*TC : o.kpis.ventaTotal;
+    const utilEsp = ventaMXN - presMXN;
+    const avance = avanceAutoDe(o);
+    const status = avance>=100 ? 'done' : 'ok';
+    const label = avance>=100 ? 'Terminada' : 'En proceso';
+    return `<tr class="obra-row" onclick="seleccionarObra('${o.id}')">
+      <td><div class="obra-name">${o.nombre}</div><div class="obra-client">${o.cliente}</div></td>
+      <td><div class="mini-progress-track"><div class="mini-progress-fill" style="width:${avance}%;background:${o.color}"></div></div>${avance}%</td>
+      <td class="num">${fmtMXN(ing)}</td>
+      <td class="num">${fmtMXN(eg)}</td>
+      <td class="num">${fmtMXN(ing-eg)}</td>
+      <td class="num">${fmtMXN(utilEsp)}</td>
+      <td><span class="status-pill ${status}">${label}</span></td>
+    </tr>`;
+  }).join('');
+
+  const meses = Object.keys(porSemana).sort();
+  const subtitle = document.getElementById('chart-subtitle-todas');
+  subtitle.textContent = meses.length===0
+    ? 'Aún no hay movimientos capturados con fecha'
+    : `${monthLabel(meses[0])} a ${monthLabel(meses[meses.length-1])} · TC: ${TC.toFixed(2)}`;
+  const labels = meses.map(k=>monthLabel(k));
+  const ing = meses.map(k=>porSemana[k].ing);
+  const eg = meses.map(k=>porSemana[k].eg);
+  const util = meses.map((k,i)=>ing[i]-eg[i]);
+
+  if(chartTodas){
+    chartTodas.data.labels=labels; chartTodas.data.datasets[0].data=ing;
+    chartTodas.data.datasets[1].data=eg; chartTodas.data.datasets[2].data=util;
+    chartTodas.update('none');
+  } else {
+    chartTodas = new Chart(document.getElementById('chart-weekly-todas'), {
+      type:'bar',
+      data:{ labels, datasets:[
+        {label:'Ingresos', data:ing, backgroundColor:'#1c7f74', borderRadius:4},
+        {label:'Gastos', data:eg, backgroundColor:'#d9642c', borderRadius:4},
+        {label:'Utilidad', data:util, backgroundColor:'#16324f', borderRadius:4}
+      ]},
+      options:{ responsive:true, plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:10.5}}}},
+        scales:{ y:{ticks:{callback:v=>'$'+(v/1e6).toFixed(1)+'M'}} } }
+    });
+  }
+}
+
+// ================= Vista: DETALLE DE OBRA (editable) =================
+function poblarFormularioObra(o){
+  const cats = categoriasDe(o);
+  const egSel = document.getElementById('eg-area');
+  egSel.innerHTML = '';
+  cats.forEach(c=>{ const opt=document.createElement('option'); opt.value=c; opt.textContent=c; egSel.appendChild(opt); });
+
+  const inSel = document.getElementById('in-estimacion');
+  inSel.innerHTML = '';
+  const oOtro = document.createElement('option'); oOtro.value='Anticipo'; oOtro.textContent='Anticipo'; inSel.appendChild(oOtro);
+  for(let n=1;n<=15;n++){ const opt=document.createElement('option'); opt.value='Estimación '+n; opt.textContent='Estimación '+n; inSel.appendChild(opt); }
+
+  const areaSel = document.getElementById('f-area');
+  areaSel.innerHTML = '<option value="">Todas las áreas</option>';
+  const areas = [...new Set(o.items.map(i=>i.section.replace(' (EQUIPOS)','').replace(' (M.O.)','')))];
+  areas.forEach(a=>{ const opt=document.createElement('option'); opt.value=a; opt.textContent=a.length>40?a.slice(0,38)+'…':a; areaSel.appendChild(opt); });
+
+  cargarPersonal(o);
+}
+
+// ================= Personal en obra =================
+const ROLES_PERSONAL = ['ingenieros','ducteros','tecnicos','seguristas'];
+function cargarPersonal(o){
+  const cfg = configDe(o.id);
+  let total = 0;
+  ROLES_PERSONAL.forEach(rol=>{
+    const val = parseInt(cfg['personal_'+rol]) || 0;
+    document.getElementById('pers-'+rol).value = val;
+    total += val;
+  });
+  document.getElementById('pers-total').textContent = total;
+}
+document.querySelectorAll('.personal-input').forEach(input=>{
+  input.addEventListener('change', async e=>{
+    if(!currentObraId) return;
+    const rol = e.target.dataset.rol;
+    const val = parseInt(e.target.value, 10);
+    const valFinal = isNaN(val) || val<0 ? 0 : val;
+    e.target.value = valFinal;
+    // Actualiza la memoria local ANTES de guardar (ver nota en Suministrado Real)
+    const idx = allConfig.findIndex(c=>c.obra===currentObraId && c.key==='personal_'+rol);
+    if(idx>=0) allConfig[idx].value = valFinal; else allConfig.push({obra:currentObraId, key:'personal_'+rol, value: valFinal});
+    let total = 0;
+    ROLES_PERSONAL.forEach(r=>{ total += parseInt(document.getElementById('pers-'+r).value)||0; });
+    document.getElementById('pers-total').textContent = total;
+
+    const ind = document.getElementById('personal-save-indicator');
+    ind.textContent = 'Guardando...';
+    const resp = await sheetPost('setConfig', {obra: currentObraId, key:'personal_'+rol, value: valFinal});
+    if(!resp){
+      ind.textContent = '⚠ No se pudo guardar — revisa tu conexión e inténtalo de nuevo';
+      return;
+    }
+    ind.textContent = 'Guardado ✓';
+    setTimeout(()=>{ if(ind.textContent==='Guardado ✓') ind.textContent=''; }, 1800);
+  });
+});
+
+attachThousandsFormatting(document.getElementById('in-monto'));
+attachThousandsFormatting(document.getElementById('eg-monto'));
+
+function addEntry(kind){
+  if(!currentObraId) return;
+  const o = obraById(currentObraId);
+  const prefix = kind==='ingresos' ? 'in' : 'eg';
+  const fecha = document.getElementById(prefix+'-fecha').value;
+  const concepto = document.getElementById(prefix+'-concepto').value.trim();
+  const monto = parseFormatted(document.getElementById(prefix+'-monto').value);
+  const moneda = document.getElementById(prefix+'-moneda').value;
+  if(!concepto || isNaN(monto) || monto<=0){ alert('Ingresa un concepto y un monto válido.'); return; }
+  const etiqueta = kind==='ingresos'
+    ? (document.getElementById('in-estimacion').value || 'Estimación 1')
+    : (document.getElementById('eg-area').value || categoriasDe(o)[0]);
+  const id = Date.now();
+  const tipo = kind==='ingresos' ? 'ingreso' : 'egreso';
+  const nuevo = { id, obra: currentObraId, tipo, fecha: fecha||new Date().toISOString().slice(0,10), concepto, monto, moneda, etiqueta };
+  allMovimientos.push(nuevo);
+
+  document.getElementById(prefix+'-concepto').value='';
+  document.getElementById(prefix+'-monto').value='';
+  document.getElementById(prefix+'-fecha').value='';
+  renderVistaDetalle(o);
+
+  const ind = document.getElementById('save-indicator');
+  ind.textContent = 'Guardando en Sheet...';
+  sheetPost('addMovimiento', {data: nuevo}).then(ok=>{
+    ind.textContent = ok ? 'Guardado ✓' : 'No se pudo guardar (revisa tu conexión)';
+    setTimeout(()=>{ if(ind.textContent==='Guardado ✓') ind.textContent=''; }, 1800);
+  });
+}
+window.addEntry = addEntry;
+
+function deleteEntry(kind, id){
+  allMovimientos = allMovimientos.filter(m=>m.id!==id);
+  renderVistaDetalle(obraById(currentObraId));
+  sheetPost('deleteMovimiento', {id});
+}
+window.deleteEntry = deleteEntry;
+
+function renderTrackerLists(o){
+  ['ingresos','egresos'].forEach(kind=>{
+    const tipo = kind==='ingresos' ? 'ingreso' : 'egreso';
+    const entries = movimientosDe(o.id).filter(m=>m.tipo===tipo).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+    const container = document.getElementById('list-'+kind);
+    if(entries.length===0){ container.innerHTML = '<div class="empty-state">Sin movimientos registrados aún</div>'; return; }
+    container.innerHTML = entries.map(e=>{
+      const monto = parseFloat(e.monto);
+      const original = e.moneda==='USD' ? ('$'+Math.round(monto).toLocaleString('en-US')+' USD') : fmtMXN(monto)+' MXN';
+      const equivLine = e.moneda==='USD' ? `<span class="row-equiv">≈ ${fmtMXN(monto*TC)} MXN</span>` : `<span class="row-equiv">≈ $${Math.round(monto/TC).toLocaleString('en-US')} USD</span>`;
+      return `<div class="tracker-row ${tipo}">
+        <div class="row-info"><span class="row-concept">${e.concepto}</span><span class="row-meta">${e.fecha} · ${e.etiqueta}</span></div>
+        <span class="row-amount">${original}${equivLine}</span>
+        <button class="row-del" onclick="deleteEntry('${kind}', ${e.id})" title="Eliminar">✕</button>
+      </div>`;
+    }).join('');
+  });
+  const totalIng = movimientosDe(o.id).filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+toNativa(m,o),0);
+  const totalEg = movimientosDe(o.id).filter(m=>m.tipo==='egreso').reduce((s,m)=>s+toNativa(m,o),0);
+  document.getElementById('total-ingresos').textContent = fmtMXN(totalIng);
+  document.getElementById('total-egresos').textContent = fmtMXN(totalEg);
+  return {totalIng, totalEg};
+}
+
+async function restablecerPresupuesto(){
+  if(!currentObraId) return;
+  const o = obraById(currentObraId);
+  if(!confirm(`Esto va a reemplazar todos los montos "Presupuestado" de ${o.nombre} con los valores originales del Excel (ya valorizados al tipo de cambio), borrando cualquier ajuste manual que hayas hecho. ¿Continuar?`)) return;
+  const def = defaultBudgetDe(o);
+  const cats = categoriasDe(o);
+  for(const c of cats){
+    const monto = def[c]||0;
+    await sheetPost('setPresupuesto', {obra:o.id, categoria:c, monto});
+    const idx = allPresupuesto.findIndex(p=>p.obra===o.id && p.categoria===c);
+    if(idx>=0) allPresupuesto[idx].monto = monto; else allPresupuesto.push({obra:o.id, categoria:c, monto});
+  }
+  renderVistaDetalle(o);
+  alert('Presupuesto restablecido a los valores del Excel.');
+}
+window.restablecerPresupuesto = restablecerPresupuesto;
+
+function renderRiskTableObra(o){
+  const tbody = document.getElementById('d-risk-tbody');
+  const cats = categoriasDe(o);
+  const presupuesto = presupuestoConDefaults(o);
+  const realByCat = {};
+  cats.forEach(c=>realByCat[c]=0);
+  movimientosDe(o.id).filter(m=>m.tipo==='egreso').forEach(m=>{
+    if(realByCat.hasOwnProperty(m.etiqueta)) realByCat[m.etiqueta] += toNativa(m,o);
+  });
+
+  let overCount=0; const overDetails=[];
+  tbody.innerHTML = cats.map(c=>{
+    const pres = presupuesto[c]||0;
+    const real = realByCat[c]||0;
+    const variance = real-pres;
+    const variancePct = pres>0 ? (variance/pres*100) : (real>0?100:0);
+    let status='none', label='Sin gasto registrado', rowClass='';
+    if(real>0){
+      if(variance>0){ status='over'; label='Sobre presupuesto'; rowClass='row-over'; overCount++; overDetails.push({c,variance,variancePct}); }
+      else if(pres>0 && real/pres>=0.9){ status='warn'; label='En riesgo (>90%)'; rowClass='row-warn'; }
+      else { status='ok'; label='Dentro de presupuesto'; }
+    }
+    return `<tr class="${rowClass}"><td>${c}</td>
+      <td class="num"><span class="currency-field"><input type="text" inputmode="decimal" class="budget-input" data-cat="${c}" value="${Math.round(pres).toLocaleString('en-US')}"></span></td>
+      <td class="num">${real>0?fmtMXN(real):'—'}</td><td class="num">${real>0?fmtPct(variancePct):'—'}</td>
+      <td><span class="status-pill ${status}">${label}</span></td></tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('.budget-input').forEach(input=>{
+    attachThousandsFormatting(input);
+    input.addEventListener('change', async e=>{
+      const cat = e.target.dataset.cat;
+      const monto = parseFormatted(e.target.value);
+      const idx = allPresupuesto.findIndex(p=>p.obra===o.id && p.categoria===cat);
+      if(idx>=0) allPresupuesto[idx].monto = monto; else allPresupuesto.push({obra:o.id, categoria:cat, monto});
+      const resp = await sheetPost('setPresupuesto', {obra:o.id, categoria:cat, monto});
+      if(!resp){ alert('No se pudo guardar el presupuesto de esta categoría — revisa tu conexión e inténtalo de nuevo.'); }
+      renderVistaDetalle(o);
+    });
+  });
+  return {overCount, overDetails};
+}
+
+let chartDetalle = null;
+function updateChartDetalle(o){
+  const monthMap = {};
+  movimientosDe(o.id).forEach(m=>{
+    if(!m.fecha) return;
+    const k = monthKey(m.fecha);
+    monthMap[k] = monthMap[k] || {ing:0, eg:0};
+    const v = toNativa(m,o);
+    if(m.tipo==='ingreso') monthMap[k].ing += v; else monthMap[k].eg += v;
+  });
+  const meses = Object.keys(monthMap).sort();
+  const subtitle = document.getElementById('d-chart-subtitle');
+  subtitle.textContent = meses.length===0
+    ? 'Aún no hay movimientos capturados con fecha'
+    : `${monthLabel(meses[0])} a ${monthLabel(meses[meses.length-1])} · TC: ${TC.toFixed(2)}`;
+  const labels = meses.map(k=>monthLabel(k));
+  const ing = meses.map(k=>monthMap[k].ing);
+  const eg = meses.map(k=>monthMap[k].eg);
+  const util = meses.map((k,i)=>ing[i]-eg[i]);
+
+  if(chartDetalle){ chartDetalle.destroy(); }
+  chartDetalle = new Chart(document.getElementById('chart-weekly-detalle'), {
+    type:'bar',
+    data:{ labels, datasets:[
+      {label:'Ingresos', data:ing, backgroundColor:'#1c7f74', borderRadius:4},
+      {label:'Gastos', data:eg, backgroundColor:'#d9642c', borderRadius:4},
+      {label:'Utilidad', data:util, backgroundColor:'#16324f', borderRadius:4}
+    ]},
+    options:{ responsive:true, plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:10.5}}}},
+      scales:{ y:{ticks:{callback:v=>'$'+(v/1e6).toFixed(1)+'M'}} } }
+  });
+}
+
+let chartManoObra = null;
+function updateChartManoObra(o){
+  const monthMap = {};
+  movimientosDe(o.id).filter(m=>m.tipo==='egreso' && m.etiqueta==='Mano de obra').forEach(m=>{
+    if(!m.fecha) return;
+    const k = monthKey(m.fecha);
+    monthMap[k] = (monthMap[k]||0) + toNativa(m,o);
+  });
+  const meses = Object.keys(monthMap).sort();
+  const labels = meses.map(k=>monthLabel(k));
+  const data = meses.map(k=>monthMap[k]);
+
+  if(chartManoObra){ chartManoObra.destroy(); }
+  chartManoObra = new Chart(document.getElementById('chart-mano-obra'), {
+    type:'line',
+    data:{ labels, datasets:[
+      {label:'Mano de Obra', data, borderColor:'#d9642c', backgroundColor:'rgba(217,100,44,.12)',
+        borderWidth:2.5, tension:.3, fill:true, pointRadius:4, pointBackgroundColor:'#d9642c'}
+    ]},
+    options:{ responsive:true, plugins:{legend:{display:false}},
+      scales:{ y:{ticks:{callback:v=>fmtNativa(v,o)}} } }
+  });
+}
+
+function renderCatalogoObra(o){
+  const items = o.items.map(it=>({...it, area: it.section.replace(' (EQUIPOS)','').replace(' (M.O.)','')}));
+  let sortKey=null, sortDir=1;
+  function currentFiltered(){
+    const area = document.getElementById('f-area').value;
+    const tipo = document.getElementById('f-tipo').value;
+    const q = document.getElementById('f-search').value.trim().toLowerCase();
+    let rows = items.filter(i=>(!area||i.area===area)&&(!tipo||i.tipo===tipo)&&(!q||i.desc.toLowerCase().includes(q)));
+    if(sortKey){ rows=[...rows].sort((a,b)=>{ const va=a[sortKey],vb=b[sortKey]; if(typeof va==='string') return va.localeCompare(vb)*sortDir; return (va-vb)*sortDir; }); }
+    return rows;
+  }
+  function renderRows(){
+    const rows = currentFiltered();
+    const tbody = document.getElementById('items-tbody');
+    const fmtC = (v, currency) => currency==='USD' ? '$'+Math.round(v).toLocaleString('en-US') : fmtMXN(v);
+    const cfg = configDe(o.id);
+    tbody.innerHTML = rows.slice(0,200).map(r=>{
+      const sumKey = 'sum_'+r.row;
+      const sumReal = cfg[sumKey]!==undefined && cfg[sumKey]!=='' ? parseFloat(cfg[sumKey]) : null;
+      const variance = sumReal!==null ? (sumReal - (r.cantidad||0)) : null;
+      let varLabel = '—', varClass = '';
+      if(variance!==null){
+        varClass = variance>0 ? 'over' : (variance<0 ? 'warn' : 'ok');
+        varLabel = (variance>0?'+':'') + variance.toLocaleString('es-MX');
+      }
+      return `<tr>
+      <td>${r.area.length>30?r.area.slice(0,28)+'…':r.area}</td>
+      <td><span class="badge ${r.tipo==='Equipo'?'equipo':'mo'}">${r.tipo}</span></td>
+      <td>${r.desc}</td><td>${r.unidad||''}</td><td class="num">${(r.cantidad||0).toLocaleString('es-MX')}</td>
+      <td class="num"><input type="text" inputmode="decimal" class="suministro-input" data-row="${r.row}" data-unidad="${r.unidad||''}"
+          value="${sumReal!==null ? sumReal.toLocaleString('es-MX') : ''}" placeholder="—" style="width:80px;text-align:right;"></td>
+      <td class="num">${variance!==null ? `<span class="status-pill ${varClass}">${varLabel} ${r.unidad||''}</span>` : '—'}</td>
+      <td><span class="badge ${r.currency==='USD'?'usd':'mxn'}">${r.currency||'MXN'}</span></td>
+      <td class="num">${fmtC(r.total_venta, r.currency)}</td><td class="num">${fmtC(r.costo_total, r.currency)}</td></tr>`;
+    }).join('');
+    document.getElementById('table-footer').textContent = `Mostrando ${Math.min(rows.length,200)} de ${rows.length} partidas`;
+
+    tbody.querySelectorAll('.suministro-input').forEach(input=>{
+      attachThousandsFormatting(input);
+      input.addEventListener('change', async e=>{
+        const rowNum = e.target.dataset.row;
+        const val = e.target.value.trim()==='' ? '' : parseFormatted(e.target.value);
+        alert('DIAGNÓSTICO:\nTexto en el campo: "' + e.target.value + '"\nValor calculado a enviar: ' + val + ' (tipo: ' + typeof val + ')\nClave: sum_' + rowNum);
+        // Actualiza la memoria local ANTES de guardar, para que si algo redibuja la tabla
+        // mientras se guarda (ej. el refresco automático), ya muestre el valor nuevo.
+        const idx = allConfig.findIndex(c=>c.obra===o.id && c.key==='sum_'+rowNum);
+        if(idx>=0) allConfig[idx].value = val; else allConfig.push({obra:o.id, key:'sum_'+rowNum, value: val});
+        e.target.disabled = true;
+        e.target.style.opacity = '0.5';
+        const resp = await sheetPost('setConfig', {obra:o.id, key:'sum_'+rowNum, value: val});
+        alert('RESPUESTA DEL SERVIDOR:\n' + JSON.stringify(resp));
+        if(!resp){
+          alert('No se pudo guardar el "Suministrado Real" de esta partida — revisa tu conexión e inténtalo de nuevo.');
+        }
+        renderRows();
+      });
+    });
+  }
+  ['f-area','f-tipo'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.onchange = renderRows;
+  });
+  document.getElementById('f-search').oninput = renderRows;
+  document.querySelectorAll('#items-table thead th').forEach(th=>{
+    th.onclick = ()=>{ const key=th.dataset.key; if(sortKey===key) sortDir*=-1; else {sortKey=key; sortDir=1;} renderRows(); };
+  });
+  renderRows();
+}
+
+function renderVistaDetalle(o){
+  if(!o) return;
+  const {totalIng, totalEg} = renderTrackerLists(o);
+  const {overCount, overDetails} = renderRiskTableObra(o);
+  updateChartDetalle(o);
+  updateChartManoObra(o);
+  renderCatalogoObra(o);
+
+  const costoPres = costoPresupuestadoTotalDe(o);
+  const utilidadEsperadaNativa = o.kpis.ventaTotal - costoPres;
+  const utilidadActualNativa = totalIng - totalEg;
+  const gastoPct = costoPres>0 ? (totalEg/costoPres*100) : 0;
+  const utilActualPct = totalIng>0 ? (utilidadActualNativa/totalIng*100) : 0;
+  const utilFinalPct = o.kpis.ventaTotal>0 ? (utilidadEsperadaNativa/o.kpis.ventaTotal*100) : 0;
+  const esUSD = o.kpis.monedaPrincipal === 'USD';
+
+  function setValorConEquiv(idValor, idFootnote, valorNativo){
+    document.getElementById(idValor).textContent = fmtNativa(valorNativo, o);
+    const fn = document.getElementById(idFootnote);
+    if(esUSD){
+      fn.textContent = '≈ ' + fmtMXN(valorNativo*TC) + ' MXN';
+      fn.classList.remove('hidden');
+    } else {
+      fn.classList.add('hidden');
+    }
+  }
+
+  setValorConEquiv('d-kpi-ingresos', 'd-kpi-ingresos-mxn', totalIng);
+  document.getElementById('d-kpi-ingresos-tag').textContent = movimientosDe(o.id).filter(m=>m.tipo==='ingreso').length + ' movimientos';
+
+  setValorConEquiv('d-kpi-gastos', 'd-kpi-gastos-mxn', totalEg);
+  const gTag = document.getElementById('d-kpi-gastos-tag');
+  gTag.textContent = gastoPct.toFixed(1) + '% del costo presupuestado';
+  gTag.className = 'kpi-tag ' + (gastoPct>100?'neg':(gastoPct>90?'neutral':'pos'));
+
+  setValorConEquiv('d-kpi-utilidad-actual', 'd-kpi-utilidad-actual-mxn', utilidadActualNativa);
+  const uaTag = document.getElementById('d-kpi-utilidad-actual-tag');
+  uaTag.textContent = totalIng>0 ? fmtPct(utilActualPct)+' utilidad actual' : 'Sin ingresos aún';
+  uaTag.className = 'kpi-tag ' + (utilidadActualNativa>=0?'pos':'neg');
+
+  setValorConEquiv('d-kpi-utilidad-final', 'd-kpi-utilidad-final-mxn', utilidadEsperadaNativa);
+  document.getElementById('d-kpi-utilidad-final-tag').textContent = fmtPct(utilFinalPct) + ' utilidad final';
+
+  const avance = avanceAutoDe(o);
+  document.getElementById('d-avance-display').textContent = avance+'%';
+  document.getElementById('d-avance-fill').style.width = avance+'%';
+  document.getElementById('d-ss-duracion').textContent = o.kpis.duracionMeses+' meses';
+  document.getElementById('d-ss-pendiente').textContent = fmtNativa(Math.max(0, o.kpis.ventaTotal-totalIng), o);
+  document.getElementById('d-ss-venta').textContent = fmtNativa(o.kpis.ventaTotal, o);
+  document.getElementById('d-ss-costo').textContent = fmtNativa(costoPres, o);
+}
+
+function renderCurrentView(){
+  renderSidebarNav();
+  if(currentObraId === null){
+    renderVistaTodas();
+  } else {
+    renderVistaDetalle(obraById(currentObraId));
+  }
+}
+
+// ================= Inicialización =================
+(async function init(){
+  await sheetGetAll();
+  renderCurrentView();
+  document.getElementById('updated-time').textContent =
+    'Actualizado ' + new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+})();
+
+setInterval(async ()=>{
+  if(pendingWrites > 0) return;
+  await sheetGetAll();
+  renderCurrentView();
+  document.getElementById('updated-time').textContent =
+    'Actualizado ' + new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+}, 20000);
+</script>
+</body>
+</html>
