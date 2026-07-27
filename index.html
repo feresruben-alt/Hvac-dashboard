@@ -1117,7 +1117,15 @@ function renderCatalogoObra(o){
       input.addEventListener('change', async e=>{
         const rowNum = e.target.dataset.row;
         const val = e.target.value.trim()==='' ? '' : parseFormatted(e.target.value);
-        await sheetPost('setConfig', {obra:o.id, key:'sum_'+rowNum, value: val});
+        e.target.disabled = true;
+        e.target.style.opacity = '0.5';
+        const resp = await sheetPost('setConfig', {obra:o.id, key:'sum_'+rowNum, value: val});
+        if(!resp){
+          alert('No se pudo guardar el "Suministrado Real" de esta partida — revisa tu conexión e inténtalo de nuevo.');
+          e.target.disabled = false;
+          e.target.style.opacity = '1';
+          return;
+        }
         const idx = allConfig.findIndex(c=>c.obra===o.id && c.key==='sum_'+rowNum);
         if(idx>=0) allConfig[idx].value = val; else allConfig.push({obra:o.id, key:'sum_'+rowNum, value: val});
         renderRows();
