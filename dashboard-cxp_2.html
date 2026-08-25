@@ -57,12 +57,6 @@
   header h2{margin:0;font-size:19px;font-weight:660;letter-spacing:-.01em;}
   header p.sub{margin:3px 0 0;font-size:12.5px;color:var(--ink-soft);}
   .head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-  .tc-box{
-    display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);
-    border-radius:10px;padding:7px 12px;font-size:12.5px;color:var(--ink-soft);
-  }
-  .tc-box input{width:60px;border:none;background:transparent;font-size:13px;color:var(--ink);font-weight:600;text-align:right;}
-  .tc-box input:focus{outline:none;}
   .btn{
     border:1px solid var(--border);background:var(--card);color:var(--ink);
     padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:560;cursor:pointer;
@@ -170,7 +164,6 @@
         </div>
         <div class="head-actions">
           <span class="save-status" id="syncStatus"><span class="dot" id="syncDot"></span><span id="syncText">Conectando…</span></span>
-          <div class="tc-box">TC USD/MXN <input type="number" id="tcInput" step="0.01" value="17"></div>
           <button class="btn" id="exportBtn">Exportar CSV</button>
           <button class="btn" id="settingsBtn" title="Configurar conexión">⚙ Conexión</button>
         </div>
@@ -191,11 +184,6 @@
 
       <div class="kpis">
         <div class="kpi">
-          <div class="lbl" id="kpiTotalLbl">Deuda pendiente</div>
-          <div class="val" id="kpiTotal">$0</div>
-          <div class="sub">Equivalente en MXN, TC actual</div>
-        </div>
-        <div class="kpi">
           <div class="lbl">Pendiente en MXN</div>
           <div class="val" id="kpiMxn">$0</div>
           <div class="sub"><span class="pill pill-teal" id="kpiMxnCount">0 facturas</span></div>
@@ -206,9 +194,14 @@
           <div class="sub"><span class="pill pill-amber" id="kpiUsdCount">0 facturas</span></div>
         </div>
         <div class="kpi">
-          <div class="lbl">Pagado (histórico)</div>
-          <div class="val" id="kpiPagado">$0</div>
-          <div class="sub"><span class="pill pill-gray" id="kpiPagadoCount">0 facturas</span></div>
+          <div class="lbl">Pagado en MXN (histórico)</div>
+          <div class="val" id="kpiPagadoMxn">$0</div>
+          <div class="sub"><span class="pill pill-gray" id="kpiPagadoMxnCount">0 facturas</span></div>
+        </div>
+        <div class="kpi">
+          <div class="lbl">Pagado en USD (histórico)</div>
+          <div class="val" id="kpiPagadoUsd">$0</div>
+          <div class="sub"><span class="pill pill-gray" id="kpiPagadoUsdCount">0 facturas</span></div>
         </div>
       </div>
 
@@ -227,7 +220,6 @@
                 <th>Obra</th>
                 <th style="text-align:right;">Pendiente MXN</th>
                 <th style="text-align:right;">Pendiente USD</th>
-                <th style="text-align:right;">Total equivalente (MXN)</th>
                 <th style="text-align:right;">Facturas pendientes</th>
               </tr>
             </thead>
@@ -237,7 +229,6 @@
                 <td>Total general</td>
                 <td class="num" id="totMxn">$0</td>
                 <td class="num" id="totUsd">$0</td>
-                <td class="num" id="totEq">$0</td>
                 <td class="num" id="totFac">0</td>
               </tr>
             </tfoot>
@@ -313,11 +304,10 @@
 </div>
 
 <script>
-const OBRAS = ["Volvo","Fuller I","Fuller II","Multi V","ICEST","Casa Gandara"];
+const OBRAS = ["Volvo","Fuller I","Fuller II","Multi V","ICEST","Casa Gandara","Oficina"];
 const API_URL_KEY = 'hvac_cxp_api_url_v1';
 
 let invoices = [];
-let tc = 17;
 let currentView = 'concentrado'; // 'concentrado' | 'pagadas' | obra name
 let apiUrl = '';
 let syncing = false;
@@ -383,8 +373,6 @@ async function loadData(silent){
   try{
     const json = await apiGet();
     invoices = json.data || [];
-    tc = json.tc || tc;
-    document.getElementById('tcInput').value = tc;
     document.getElementById('setupBanner').style.display = 'none';
     setSyncStatus('ok', 'En vivo');
   }catch(e){
@@ -401,7 +389,7 @@ function startPolling(){
     if(anyEditing) return;
     await loadData(true);
     render();
-  }, 20000);
+  }, 5000);
 }
 
 async function withSync(fn, statusMsg){
@@ -422,6 +410,19 @@ async function withSync(fn, statusMsg){
 }
 
 // --- Sidebar ---
+function resetFiltersForView(){
+  document.getElementById('fSearch').value = '';
+  document.getElementById('fObra').value = '';
+  document.getElementById('fMoneda').value = '';
+  document.getElementById('fEstado').value = currentView === 'pagadas' ? 'pagada' : '';
+}
+
+function goToView(view){
+  currentView = view;
+  resetFiltersForView();
+  render();
+}
+
 function renderSidebar(){
   const list = document.getElementById('obraNavList');
   list.innerHTML = OBRAS.map(o => {
@@ -433,7 +434,7 @@ function renderSidebar(){
   }).join('');
   document.querySelectorAll('.sb-item').forEach(el => {
     el.classList.toggle('active', el.getAttribute('data-view') === currentView);
-    el.onclick = () => { currentView = el.getAttribute('data-view'); render(); };
+    el.onclick = () => goToView(el.getAttribute('data-view'));
   });
 }
 
@@ -441,7 +442,6 @@ function renderSidebar(){
 function setViewChrome(){
   const concSection = document.getElementById('concentradoSection');
   const facSection = document.getElementById('facturasSection');
-  const kpiTotalLbl = document.getElementById('kpiTotalLbl');
   const newObraWrap = document.getElementById('newObraWrap');
   const fObra = document.getElementById('fObra');
   const thObra = document.getElementById('thObra');
@@ -452,7 +452,6 @@ function setViewChrome(){
     concSection.style.display = '';
     facSection.style.display = '';
     document.getElementById('facturasTitle').textContent = 'Todas las facturas';
-    kpiTotalLbl.textContent = 'Deuda pendiente';
     newObraWrap.style.display = '';
     fObra.style.display = '';
     thObra.style.display = '';
@@ -462,11 +461,9 @@ function setViewChrome(){
     concSection.style.display = 'none';
     facSection.style.display = '';
     document.getElementById('facturasTitle').textContent = 'Historial de pagos';
-    kpiTotalLbl.textContent = 'Deuda pendiente';
     newObraWrap.style.display = '';
     fObra.style.display = '';
     thObra.style.display = '';
-    document.getElementById('fEstado').value = 'pagada';
   } else {
     // specific obra
     document.getElementById('viewTitle').textContent = currentView;
@@ -474,7 +471,6 @@ function setViewChrome(){
     concSection.style.display = 'none';
     facSection.style.display = '';
     document.getElementById('facturasTitle').textContent = 'Facturas — ' + currentView;
-    kpiTotalLbl.textContent = 'Deuda pendiente de esta obra';
     newObraWrap.style.display = 'none';
     fObra.style.display = 'none';
     thObra.style.display = 'none';
@@ -581,17 +577,18 @@ function renderKpis(){
 
   const mxnPend = pendientes.filter(i => i.moneda === 'MXN').reduce((s,i)=>s+(parseFloat(i.importe)||0),0);
   const usdPend = pendientes.filter(i => i.moneda === 'USD').reduce((s,i)=>s+(parseFloat(i.importe)||0),0);
-  const eqPend = mxnPend + usdPend*tc;
 
-  const pagadoEq = pagadasList.reduce((s,i)=> s + (i.moneda==='USD' ? (parseFloat(i.importe)||0)*tc : (parseFloat(i.importe)||0)), 0);
+  const mxnPagado = pagadasList.filter(i => i.moneda === 'MXN').reduce((s,i)=>s+(parseFloat(i.importe)||0),0);
+  const usdPagado = pagadasList.filter(i => i.moneda === 'USD').reduce((s,i)=>s+(parseFloat(i.importe)||0),0);
 
-  document.getElementById('kpiTotal').textContent = fmtPlain(eqPend) + ' MXN';
   document.getElementById('kpiMxn').textContent = fmtPlain(mxnPend);
   document.getElementById('kpiMxnCount').textContent = pendientes.filter(i=>i.moneda==='MXN').length + ' facturas';
   document.getElementById('kpiUsd').textContent = fmtPlain(usdPend);
   document.getElementById('kpiUsdCount').textContent = pendientes.filter(i=>i.moneda==='USD').length + ' facturas';
-  document.getElementById('kpiPagado').textContent = fmtPlain(pagadoEq) + ' MXN';
-  document.getElementById('kpiPagadoCount').textContent = pagadasList.length + ' facturas';
+  document.getElementById('kpiPagadoMxn').textContent = fmtPlain(mxnPagado);
+  document.getElementById('kpiPagadoMxnCount').textContent = pagadasList.filter(i=>i.moneda==='MXN').length + ' facturas';
+  document.getElementById('kpiPagadoUsd').textContent = fmtPlain(usdPagado);
+  document.getElementById('kpiPagadoUsdCount').textContent = pagadasList.filter(i=>i.moneda==='USD').length + ' facturas';
 }
 
 function renderConcentrado(){
@@ -600,25 +597,22 @@ function renderConcentrado(){
   const byObra = {};
   OBRAS.forEach(o => byObra[o] = {mxn:0, usd:0, count:0});
   invoices.filter(i => !i.pagada).forEach(inv => {
-    const key = OBRAS.includes(inv.obra) ? inv.obra : (byObra[inv.obra] ? inv.obra : null);
     if(!byObra[inv.obra]) byObra[inv.obra] = {mxn:0, usd:0, count:0};
     if(inv.moneda === 'USD') byObra[inv.obra].usd += parseFloat(inv.importe)||0;
     else byObra[inv.obra].mxn += parseFloat(inv.importe)||0;
     byObra[inv.obra].count += 1;
   });
-  const rows = Object.entries(byObra).sort((a,b) => (b[1].mxn + b[1].usd*tc) - (a[1].mxn + a[1].usd*tc));
+  const rows = Object.entries(byObra).sort((a,b) => (b[1].mxn + b[1].usd) - (a[1].mxn + a[1].usd));
   body.innerHTML = rows.map(([obra, v]) => {
-    const eq = v.mxn + v.usd*tc;
     return `<tr>
       <td><a class="obra-link" data-view="${escapeHtml(obra)}">${escapeHtml(obra)}</a></td>
       <td class="num">${fmtPlain(v.mxn)}</td>
       <td class="num">${fmtPlain(v.usd)}</td>
-      <td class="num"><b>${fmtPlain(eq)}</b></td>
       <td class="num">${v.count}</td>
     </tr>`;
   }).join('');
   document.querySelectorAll('.obra-link').forEach(a => {
-    a.onclick = () => { currentView = a.getAttribute('data-view'); render(); };
+    a.onclick = () => goToView(a.getAttribute('data-view'));
   });
 
   const totMxn = Object.values(byObra).reduce((s,v)=>s+v.mxn,0);
@@ -626,7 +620,6 @@ function renderConcentrado(){
   const totFac = Object.values(byObra).reduce((s,v)=>s+v.count,0);
   document.getElementById('totMxn').textContent = fmtPlain(totMxn);
   document.getElementById('totUsd').textContent = fmtPlain(totUsd);
-  document.getElementById('totEq').textContent = fmtPlain(totMxn + totUsd*tc);
   document.getElementById('totFac').textContent = totFac;
 }
 
@@ -641,12 +634,6 @@ function render(){
 }
 
 // --- Events ---
-document.getElementById('tcInput').addEventListener('change', async (e) => {
-  tc = parseFloat(e.target.value) || 17;
-  render();
-  await withSync(async () => { await apiPost({ action: 'setTC', tc }); }, 'Guardando TC…');
-});
-
 document.getElementById('addBtn').addEventListener('click', async () => {
   const fecha = document.getElementById('newFecha').value;
   const proveedor = document.getElementById('newProveedor').value.trim();
