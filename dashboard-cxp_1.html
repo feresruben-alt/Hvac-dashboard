@@ -263,6 +263,7 @@
 
         <div class="filters">
           <input type="text" id="fSearch" placeholder="Buscar proveedor u obra...">
+          <select id="fProveedor"><option value="">Todos los proveedores</option></select>
           <select id="fObra" style="display:none;"><option value="">Todas las obras</option></select>
           <select id="fMoneda">
             <option value="">Todas las monedas</option>
@@ -304,7 +305,7 @@
 </div>
 
 <script>
-const OBRAS = ["Volvo","Fuller I","Fuller II","Multi V","ICEST","Casa Gandara"];
+const OBRAS = ["Volvo","Fuller I","Fuller II","Multi V","ICEST","Casa Gandara","Oficina","Ing. Gabriel"];
 const API_URL_KEY = 'hvac_cxp_api_url_v1';
 
 let invoices = [];
@@ -389,7 +390,7 @@ function startPolling(){
     if(anyEditing) return;
     await loadData(true);
     render();
-  }, 20000);
+  }, 5000);
 }
 
 async function withSync(fn, statusMsg){
@@ -410,6 +411,20 @@ async function withSync(fn, statusMsg){
 }
 
 // --- Sidebar ---
+function resetFiltersForView(){
+  document.getElementById('fSearch').value = '';
+  document.getElementById('fProveedor').value = '';
+  document.getElementById('fObra').value = '';
+  document.getElementById('fMoneda').value = '';
+  document.getElementById('fEstado').value = currentView === 'pagadas' ? 'pagada' : '';
+}
+
+function goToView(view){
+  currentView = view;
+  resetFiltersForView();
+  render();
+}
+
 function renderSidebar(){
   const list = document.getElementById('obraNavList');
   list.innerHTML = OBRAS.map(o => {
@@ -421,7 +436,7 @@ function renderSidebar(){
   }).join('');
   document.querySelectorAll('.sb-item').forEach(el => {
     el.classList.toggle('active', el.getAttribute('data-view') === currentView);
-    el.onclick = () => { currentView = el.getAttribute('data-view'); render(); };
+    el.onclick = () => goToView(el.getAttribute('data-view'));
   });
 }
 
@@ -451,7 +466,6 @@ function setViewChrome(){
     newObraWrap.style.display = '';
     fObra.style.display = '';
     thObra.style.display = '';
-    document.getElementById('fEstado').value = 'pagada';
   } else {
     // specific obra
     document.getElementById('viewTitle').textContent = currentView;
@@ -474,6 +488,7 @@ function scopedInvoices(){
 function getFilters(){
   return {
     search: document.getElementById('fSearch').value.trim().toLowerCase(),
+    proveedor: document.getElementById('fProveedor').value,
     obra: document.getElementById('fObra').value,
     moneda: document.getElementById('fMoneda').value,
     estado: document.getElementById('fEstado').value
@@ -484,6 +499,7 @@ function applyFilters(list){
   const f = getFilters();
   return list.filter(inv => {
     if(f.obra && inv.obra !== f.obra) return false;
+    if(f.proveedor && inv.proveedor !== f.proveedor) return false;
     if(f.moneda && inv.moneda !== f.moneda) return false;
     if(f.estado === 'pendiente' && inv.pagada) return false;
     if(f.estado === 'pagada' && !inv.pagada) return false;
@@ -500,6 +516,14 @@ function refreshObraFilterOptions(){
   const current = sel.value;
   sel.innerHTML = '<option value="">Todas las obras</option>' + OBRAS.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
   sel.value = OBRAS.includes(current) ? current : '';
+}
+
+function refreshProveedorFilterOptions(){
+  const sel = document.getElementById('fProveedor');
+  const current = sel.value;
+  const proveedores = Array.from(new Set(scopedInvoices().map(i => i.proveedor).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML = '<option value="">Todos los proveedores</option>' + proveedores.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+  sel.value = proveedores.includes(current) ? current : '';
 }
 
 function refreshNewObraSelect(){
@@ -600,7 +624,7 @@ function renderConcentrado(){
     </tr>`;
   }).join('');
   document.querySelectorAll('.obra-link').forEach(a => {
-    a.onclick = () => { currentView = a.getAttribute('data-view'); render(); };
+    a.onclick = () => goToView(a.getAttribute('data-view'));
   });
 
   const totMxn = Object.values(byObra).reduce((s,v)=>s+v.mxn,0);
@@ -615,6 +639,7 @@ function render(){
   renderSidebar();
   setViewChrome();
   refreshObraFilterOptions();
+  refreshProveedorFilterOptions();
   refreshNewObraSelect();
   renderTable();
   renderKpis();
@@ -697,7 +722,7 @@ document.getElementById('tbody').addEventListener('click', async (e) => {
   }
 });
 
-['fSearch','fObra','fMoneda','fEstado'].forEach(id => {
+['fSearch','fProveedor','fObra','fMoneda','fEstado'].forEach(id => {
   document.getElementById(id).addEventListener('input', renderTable);
   document.getElementById(id).addEventListener('change', renderTable);
 });
