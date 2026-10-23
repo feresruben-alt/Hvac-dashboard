@@ -1,0 +1,32 @@
+{
+  "name": "HVAC Dashboard Financiero",
+  "short_name": "HVAC Finanzas",
+  "description": "Dashboard financiero de HVAC S.A. de C.V.: obras, cuentas por pagar y por cobrar",
+  "lang": "es-MX",
+  "start_url": "dashboard.html",
+  "scope": "./",
+  "id": "dashboard.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
