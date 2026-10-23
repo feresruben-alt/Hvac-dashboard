@@ -895,7 +895,8 @@ const r_ventaPorObra = (contratos, obra) => {
 };
 
 let r_cierresCxp = [], r_cierresCxc = [];
-window.onCxpData = (presupuestos, invoices, cierres) => { r_cxpData = { presupuestos: presupuestos||[], invoices: invoices||[] }; r_cierresCxp = cierres||[]; renderResumen(); };
+let r_removed = [];
+window.onCxpData = (presupuestos, invoices, cierres, removed) => { r_cxpData = { presupuestos: presupuestos||[], invoices: invoices||[] }; r_cierresCxp = cierres||[]; r_removed = removed||[]; renderResumen(); };
 window.onCxcData = (ventas, contratos, cierres) => { r_cxcData = { contratos: contratos||[] }; r_cierresCxc = cierres||[]; renderResumen(); };
 
 let r_tc = 0, r_tcSrcTxt = '';
@@ -947,7 +948,7 @@ function renderResumen(){
     ...r_cxcData.contratos.map(c => c.obra),
     ...r_cxpData.invoices.map(i => i.obra),
     ...Array.from(cierresMap.keys())
-  ]);
+  ].filter(o => !r_removed.includes(o)));
 
   // "Credito" no es una obra: es financiamiento para las obras. No tiene venta, así que no tiene fila,
   // pero SÍ es gasto y cuenta por pagar: entra al costo real, al por pagar y descuenta de la utilidad.
@@ -1230,11 +1231,14 @@ const isMxnOnly = obra => MXN_ONLY.includes(canonObra(obra));
 function normInv(list){ return Array.isArray(list) ? list.map(i => { const o = canonObra(i.obra); return { ...i, obra: o, moneda: isMxnOnly(o) ? 'MXN' : i.moneda }; }).filter(i => keepVisible(i.obra)) : null; }
 // --- Cierre de obras: [{obra, fecha}] guardado en el Sheet. Las obras cerradas se ocultan en los dashboards de administración ---
 let cierres = [];
+const OBRAS_OCULTAS = ['TIS Vitti Sta. Catarina']; // obras eliminadas a mano: no se muestran en ningún dashboard
+let removedObras = OBRAS_OCULTAS.slice(); // obras eliminadas (fecha 'ELIMINADA' en la hoja Cierres): se ocultan para todos
 let tcSrv = 0;
 function normCierres(list){ return Array.isArray(list) ? list.filter(c => c && c.obra).map(c => ({ obra: canonObra(c.obra), fecha: String(c.fecha || '').slice(0,10) })) : []; }
 const isClosed = obra => cierres.some(c => c.obra === canonObra(obra));
-const keepVisible = o => IS_OWNER || !isClosed(o);
-function applyCierresFrom(json){ if(json && Array.isArray(json.cierres)) cierres = normCierres(json.cierres); if(json && json.tc) tcSrv = Number(json.tc) || tcSrv; }
+const isRemoved = obra => removedObras.includes(canonObra(obra));
+const keepVisible = o => !isRemoved(o) && (IS_OWNER || !isClosed(o));
+function applyCierresFrom(json){ if(json && Array.isArray(json.cierres)){ const all = normCierres(json.cierres); removedObras = OBRAS_OCULTAS.concat(all.filter(c => c.fecha === 'ELIMINADA').map(c => c.obra)); cierres = all.filter(c => c.fecha !== 'ELIMINADA'); } if(json && json.tc) tcSrv = Number(json.tc) || tcSrv; }
 
 
 async function apiGet(){
@@ -1267,7 +1271,7 @@ async function loadData(silent){
   try{
     const json = await apiGet();
     invoices = normInv(json.data) || [];
-    presupuestos = (json.presupuestos || []).map(p => ({ ...p, obra: canonObra(p.obra) }));
+    presupuestos = (json.presupuestos || []).map(p => ({ ...p, obra: canonObra(p.obra) })).filter(p => keepVisible(p.obra));
     if(!settingsOpen) document.getElementById('p_setupBanner').style.display = 'none';
     setSyncStatus('ok', 'En vivo');
   }catch(e){
@@ -1382,6 +1386,8 @@ function setViewChrome(){
     setDisp(budgetPanelObra, '');
     setDisp(budgetConcSection, 'none');
   }
+  const delBtn = document.getElementById('p_delObraBtn');
+  if(delBtn) delBtn.style.display = (currentView === 'concentrado' || currentView === 'pagadas') ? 'none' : '';
 }
 
 function getPresupuesto(obra){
@@ -1731,7 +1737,7 @@ function render(){
   renderBudgetPanelObra();
   renderBudgetConcentrado();
   if(window.onTcData) window.onTcData(tcSrv);
-  if(window.onCxpData) window.onCxpData(presupuestos, invoices, cierres);
+  if(window.onCxpData) window.onCxpData(presupuestos, invoices, cierres, removedObras);
 }
 // Tipo de cambio USD/MXN (se guarda en la hoja Config del Sheet de CxP)
 window.cxpSetTC = async tc => {
@@ -1753,6 +1759,29 @@ window.cxpSetCierre = async (obra, fecha) => {
   }catch(e){ console.error(e); return false; }
 };
 
+
+// Elimina una obra: borra sus facturas y su costo fijado, y la oculta para siempre (solo dueño)
+window.cxpDelObra = async obra => {
+  obra = canonObra(obra);
+  const n = invoices.filter(i => i.obra === obra).length;
+  if(!confirm('¿Eliminar la obra "' + obra + '"?\n\nSe borrarán sus ' + n + ' factura(s) y su costo fijado, y la obra dejará de aparecer. Esto no se puede deshacer.')) return false;
+  if(!confirm('Última confirmación: eliminar "' + obra + '" definitivamente.')) return false;
+  invoices = invoices.filter(i => i.obra !== obra);
+  presupuestos = presupuestos.filter(p => p.obra !== obra);
+  removedObras.push(obra);
+  currentView = 'concentrado';
+  resetFiltersForView();
+  render();
+  if(!apiUrl) return false;
+  await withSync(async () => {
+    const json = await apiPost({ action: 'delObra', obra });
+    if(json && json.data){ invoices = normInv(json.data) || invoices; }
+    render();
+  }, 'Eliminando obra…');
+  return true;
+};
+const delObraBtnEl = document.getElementById('p_delObraBtn');
+if(delObraBtnEl) delObraBtnEl.addEventListener('click', () => { if(currentView !== 'concentrado' && currentView !== 'pagadas') window.cxpDelObra(currentView); });
 
 // --- Events ---
 const addBtnEl = document.getElementById('p_addBtn');
@@ -1884,7 +1913,7 @@ if(IS_OWNER && bgSaveEl) bgSaveEl.addEventListener('click', async () => {
   render();
   await withSync(async () => {
     const json = await apiPost({ action: 'setPresupuesto', presupuesto });
-    presupuestos = (json.presupuestos || presupuestos).map(p => ({ ...p, obra: canonObra(p.obra) }));
+    presupuestos = (json.presupuestos || presupuestos).map(p => ({ ...p, obra: canonObra(p.obra) })).filter(p => keepVisible(p.obra));
     render();
   }, 'Guardando costos…');
 });
