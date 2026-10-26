@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cuentas por Cobrar — HVAC S.A. de C.V.</title>
+
 <style>
 
   :root{
@@ -479,7 +480,8 @@ function normList(list){ return Array.isArray(list) ? list.map(c => { const o = 
 let cierres = [];
 function normCierres(list){ return Array.isArray(list) ? list.filter(c => c && c.obra).map(c => ({ obra: canonObra(c.obra), fecha: String(c.fecha || '').slice(0,10) })) : []; }
 const isClosed = obra => cierres.some(c => c.obra === canonObra(obra));
-const keepVisible = o => IS_OWNER || !isClosed(o);
+const OBRAS_OCULTAS = ['TIS Vitti Sta. Catarina']; // obras eliminadas a mano: no se muestran en ningún dashboard
+const keepVisible = o => !OBRAS_OCULTAS.includes(canonObra(o)) && (IS_OWNER || !isClosed(o));
 function applyCierresFrom(json){ if(json && Array.isArray(json.cierres)) cierres = normCierres(json.cierres); }
 
 function allObras(){
